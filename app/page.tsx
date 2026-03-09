@@ -988,11 +988,13 @@ export default function Home() {
             <div className="rounded-lg border border-zinc-700 bg-zinc-800 p-4 space-y-3">
               <div>
                 <p className="text-sm font-semibold text-zinc-100">
-                  Vind et gavekort på 100 kr
+                  Vind et gavekort på 100 kr, hvis du tilmelder dig en kort follow-up test om en uge
                 </p>
                 <p className="text-xs text-zinc-400 mt-0.5">
-                  Vi trækker lod blandt 10 deltagere. Skriv din email nedenfor hvis du vil være med.
-                  Din email bruges kun til giveawayen og knyttes ikke til dine svar.
+                  Vi trækker lod blandt de deltagere, der gennemfører follow-up testen. Skriv din
+                  email nedenfor — du modtager en mail om ca. en uge med et link til en kort
+                  follow-up test (5 min). Du er først med i lodtrækningen, når du har gennemført
+                  den. Din email bruges kun til dette og knyttes ikke til dine øvrige svar.
                 </p>
               </div>
 
