@@ -24,7 +24,6 @@ model ParticipantLog {
   gender               String?
   education            String?
 
-  priorKnowledge       Int?
   confidence           Int?
 
   pretestQ1            Int?
