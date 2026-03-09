@@ -1041,6 +1041,11 @@ export default function Home() {
                 bachelorprojekt i psykologi.
               </p>
               <p className="text-sm opacity-70">— Ole og Magnus</p>
+              <p className="text-sm text-zinc-500 italic">
+                Hvis i har nogle spørgsmål kan i evt. kontakte os på:<br/>
+                lyngmagnus@gmail.com<br/>
+                ole-thomassen@hotmail.com
+              </p>
             </div>
 
             {/* Giveaway */}
