@@ -20,12 +20,13 @@ export async function POST(req: Request) {
       );
     }
 
-    const log = await prisma.participantLog.update({
+    await prisma.participantLog.update({
       where: { participantId },
       data: { email, followUpToken },
+      select: { id: true },
     });
 
-    return NextResponse.json({ ok: true, log });
+    return NextResponse.json({ ok: true });
   } catch (err: any) {
     console.error("API /api/log-followup error:", err);
     return NextResponse.json(

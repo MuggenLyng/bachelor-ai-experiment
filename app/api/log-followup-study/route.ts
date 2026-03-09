@@ -20,6 +20,7 @@ export async function POST(req: Request) {
     // Check if already completed
     const existing = await prisma.participantLog.findUnique({
       where: { followUpToken: token },
+      select: { id: true, followUpToken: true },
     });
 
     if (!existing) {
@@ -30,7 +31,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Already completed" }, { status: 400 });
     }
 
-    const log = await prisma.participantLog.update({
+    await prisma.participantLog.update({
       where: { followUpToken: token },
       data: {
         followUpFreeText: followUpFreeText ?? null,
@@ -38,9 +39,10 @@ export async function POST(req: Request) {
         followUpCompleted: true,
         followUpCompletedAt: new Date(),
       } as any,
+      select: { id: true },
     });
 
-    return NextResponse.json({ ok: true, log });
+    return NextResponse.json({ ok: true });
   } catch (err: any) {
     console.error("API /api/log-followup-study error:", err);
     return NextResponse.json(

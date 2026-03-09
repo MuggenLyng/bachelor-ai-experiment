@@ -34,7 +34,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const log = await prisma.participantLog.update({
+    await prisma.participantLog.update({
       where: { participantId },
       data: {
         freeTextResponse: freeTextResponse ?? null,
@@ -45,9 +45,10 @@ export async function POST(req: Request) {
         mentalEffort: mentalEffort ?? null,
         completed: completed ?? false,
       },
+      select: { id: true },
     });
 
-    return NextResponse.json({ ok: true, log });
+    return NextResponse.json({ ok: true });
   } catch (err: any) {
     console.error("API /api/log-learning-survey error:", err);
     return NextResponse.json(
