@@ -87,6 +87,16 @@ function formatTime(seconds: number) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
+function loadSavedState(): Record<string, any> | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const s = localStorage.getItem("experimentState");
+    return s ? JSON.parse(s) : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function Home() {
   const [step, setStep] = useState<Step>("consent");
   const [consented, setConsented] = useState(false);
@@ -159,6 +169,46 @@ export default function Home() {
     setGroup(newGroup);
     setParticipantId(newId);
   }, []);
+
+  // Restore state from localStorage on mount (client-side only)
+  useEffect(() => {
+    const saved = loadSavedState();
+    if (!saved) return;
+    if (saved.step) setStep(saved.step);
+    if (saved.consented) setConsented(saved.consented);
+    if (saved.age) setAge(saved.age);
+    if (saved.gender) setGender(saved.gender);
+    if (saved.education) setEducation(saved.education);
+    if (saved.confidence != null) setConfidence(saved.confidence);
+    if (saved.pretestAnswers) setPretestAnswers(saved.pretestAnswers);
+    if (saved.messages) setMessages(saved.messages);
+    if (saved.chatStartTime) {
+      chatStartTimeRef.current = saved.chatStartTime;
+      const elapsed = Math.floor((Date.now() - saved.chatStartTime) / 1000);
+      setTimeLeft(Math.max(0, CHAT_DURATION - elapsed));
+    }
+    if (saved.trust) setTrust(saved.trust);
+    if (saved.engagement) setEngagement(saved.engagement);
+    if (saved.freeTextResponse) setFreeTextResponse(saved.freeTextResponse);
+    if (saved.perceivedLearning) setPerceivedLearning(saved.perceivedLearning);
+    if (saved.mentalEffort != null) setMentalEffort(saved.mentalEffort);
+    if (saved.followUpEmail) setFollowUpEmail(saved.followUpEmail);
+    if (saved.followUpSubmitted) setFollowUpSubmitted(saved.followUpSubmitted);
+  }, []);
+
+  // Persist state to localStorage on every relevant change
+  useEffect(() => {
+    try {
+      localStorage.setItem("experimentState", JSON.stringify({
+        step, consented, age, gender, education, confidence, pretestAnswers,
+        messages, chatStartTime: chatStartTimeRef.current,
+        trust, engagement, freeTextResponse, perceivedLearning, mentalEffort,
+        followUpEmail, followUpSubmitted,
+      }));
+    } catch {}
+  }, [step, consented, age, gender, education, confidence, pretestAnswers,
+      messages, trust, engagement, freeTextResponse, perceivedLearning,
+      mentalEffort, followUpEmail, followUpSubmitted]);
 
   // Chat timer
   useEffect(() => {
