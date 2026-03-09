@@ -1,0 +1,79 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ParticipantLog {
+  id                   Int      @id @default(autoincrement())
+
+  participantId        String   @unique
+  group                String
+
+  // demographics
+  age                  Int?
+  gender               String?
+  education            String?
+
+  priorKnowledge       Int?
+  confidence           Int?
+
+  pretestQ1            Int?
+  pretestQ2            Int?
+  pretestQ3            Int?
+  pretestQ4            Int?
+  pretestScore         Int?
+
+  // chat analytics
+  chatTranscript       String?
+  chatMessageCount     Int?
+  userMessageCount     Int?
+  assistantMessageCount Int?
+
+  // post-chat survey
+  trust1               Int?
+  trust2               Int?
+  trust3               Int?
+
+  engagement1          Int?
+  engagement2          Int?
+  engagement3          Int?
+
+  // free text
+  freeTextResponse     String?
+  freeTextWordCount    Int?
+
+  // perceived learning
+  perceivedLearning1   Int?
+  perceivedLearning2   Int?
+  perceivedLearning3   Int?
+
+  // mental effort (Paas, 1-9)
+  mentalEffort         Int?
+
+  // completion tracking
+  completed            Boolean  @default(false)
+  dropoutStep          String?
+
+  // follow-up system
+  email                String?
+  followUpToken        String?  @unique
+
+  // follow-up study results
+  followUpCompleted         Boolean   @default(false)
+  followUpCompletedAt       DateTime?
+  followUpFreeText          String?
+  followUpFreeTextWordCount Int?
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime? @updatedAt
+}
