@@ -13,6 +13,7 @@ export async function POST(req: Request) {
       age,
       gender,
       education,
+      deviceType,
       priorKnowledge,
       confidence,
       pretestQ1,
@@ -27,6 +28,7 @@ export async function POST(req: Request) {
       age?: number | null;
       gender?: string | null;
       education?: string | null;
+      deviceType?: string | null;
       priorKnowledge?: number | null;
       confidence?: number | null;
       pretestQ1?: number | null;
@@ -50,6 +52,7 @@ export async function POST(req: Request) {
     if (age !== undefined)           data.age = age ?? null;
     if (gender !== undefined)        data.gender = gender ?? null;
     if (education !== undefined)     data.education = education ?? null;
+    if (deviceType !== undefined)    data.deviceType = deviceType ?? null;
     if (priorKnowledge !== undefined) data.priorKnowledge = priorKnowledge ?? null;
     if (confidence !== undefined)    data.confidence = confidence ?? null;
     if (pretestQ1 !== undefined)     data.pretestQ1 = pretestQ1 ?? null;

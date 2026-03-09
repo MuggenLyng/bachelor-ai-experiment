@@ -138,6 +138,9 @@ export default function Home() {
   const [followUpEmail, setFollowUpEmail] = useState("");
   const [followUpSubmitted, setFollowUpSubmitted] = useState(false);
 
+  // Device type
+  const [deviceType, setDeviceType] = useState<string | null>(null);
+
   // Learning survey
   const [perceivedLearning, setPerceivedLearning] = useState<(number | null)[]>([
     null, null, null,
@@ -168,6 +171,11 @@ export default function Home() {
 
     setGroup(newGroup);
     setParticipantId(newId);
+  }, []);
+
+  // Detect device type on mount
+  useEffect(() => {
+    setDeviceType(window.innerWidth < 768 ? "mobile" : "desktop");
   }, []);
 
   // Restore state from localStorage on mount (client-side only)
@@ -312,6 +320,7 @@ export default function Home() {
         age: Number(age),
         gender,
         education,
+        deviceType,
         pretestQ1: pretestAnswers[0],
         pretestQ2: pretestAnswers[1],
         pretestQ3: pretestAnswers[2],
@@ -578,7 +587,7 @@ export default function Home() {
               <select
                 value={education}
                 onChange={(e) => setEducation(e.target.value)}
-                className="rounded-lg bg-zinc-800 text-white px-3 py-2 outline-none text-sm"
+                className="w-full max-w-xs rounded-lg bg-zinc-800 text-white px-3 py-2 outline-none text-sm"
               >
                 <option value="">Vælg...</option>
                 {EDUCATION_OPTIONS.map((opt) => (
@@ -788,7 +797,7 @@ export default function Home() {
 
               <div className="border-t border-zinc-800 bg-zinc-950 p-3 flex gap-2">
                 <input
-                  className="flex-1 rounded-lg bg-zinc-800 text-white px-3 py-2 outline-none placeholder:text-zinc-500"
+                  className="flex-1 min-w-0 rounded-lg bg-zinc-800 text-white px-3 py-2 outline-none placeholder:text-zinc-500"
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   placeholder="Skriv en besked..."
@@ -1037,7 +1046,7 @@ export default function Home() {
             {/* Giveaway */}
             <div className="rounded-lg border border-zinc-700 bg-zinc-800 p-4 space-y-3">
               <div>
-                <p className="text-sm font-semibold text-zinc-100">
+                <p className="text-sm font-semibold text-green-300">
                   Vind et gavekort på 100 kr, hvis du tilmelder dig en kort follow-up test om en uge
                 </p>
                 <p className="text-xs text-zinc-400 mt-0.5">
@@ -1053,16 +1062,16 @@ export default function Home() {
                   Du er tilmeldt! Vi sender dig et link til follow-up studiet om cirka en uge, og kontakter dig selvfølgelig hvis du vinder :)
                 </p>
               ) : (
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <input
                     type="email"
                     value={followUpEmail}
                     onChange={(e) => setFollowUpEmail(e.target.value)}
                     placeholder="din@email.dk"
-                    className="flex-1 rounded-lg bg-zinc-950 text-white px-3 py-2 outline-none placeholder:text-zinc-500 text-sm border border-zinc-700"
+                    className="flex-1 min-w-0 rounded-lg bg-zinc-950 text-white px-3 py-2 outline-none placeholder:text-zinc-500 text-sm border border-zinc-700"
                   />
                   <button
-                    className="rounded-lg bg-zinc-700 text-white px-4 py-2 text-sm disabled:opacity-40"
+                    className="rounded-lg bg-zinc-700 text-white px-4 py-2 text-sm disabled:opacity-40 shrink-0"
                     disabled={!followUpEmail.includes("@")}
                     onClick={async () => {
                       const token = generateUUID();

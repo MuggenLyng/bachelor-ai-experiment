@@ -23,6 +23,7 @@ model ParticipantLog {
   age                  Int?
   gender               String?
   education            String?
+  deviceType           String?
 
   confidence           Int?
 
