@@ -156,7 +156,7 @@ function FollowUpExperiment() {
             </p>
             <p className="text-base text-zinc-200 leading-relaxed">
               Vi trækker lod om{" "}
-              <span className="font-medium text-green-400">10 gavekort på 100 kr.</span> inden
+              <span className="font-medium text-green-400">100 kr.</span> inden
               for de næste dage og kontakter vinderne (måske dig?!) på e-mail.
             </p>
             <p className="text-sm text-zinc-400">— Ole og Magnus</p>

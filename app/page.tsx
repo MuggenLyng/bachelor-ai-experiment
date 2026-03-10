@@ -443,7 +443,7 @@ export default function Home() {
                   Til sidst får du desuden mulighed for at deltage i et kort follow-up-eksperiment
                   ca. en uge fra testen og 10 deltagere vil blive trukket til at vinde et{" "}
                   <span className="font-medium text-green-300">
-                    gavekort på 100 kr.
+                    100 kr.
                   </span>{" "}
                   ved at deltage i follow-up testen!
                 </p>
@@ -1064,7 +1064,7 @@ export default function Home() {
             <div className="rounded-lg border border-zinc-700 bg-zinc-800 p-4 space-y-3">
               <div>
                 <p className="text-sm font-semibold text-green-300">
-                  Vind et gavekort på 100 kr, hvis du tilmelder dig en kort follow-up test om en uge
+                  Vind 100 kr., hvis du tilmelder dig en kort follow-up test om en uge
                 </p>
                 <p className="text-xs text-zinc-400 mt-0.5">
                   Vi trækker lod blandt de deltagere, der gennemfører follow-up testen. Skriv din
