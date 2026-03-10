@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     // Check if already completed
     const existing = await prisma.participantLog.findUnique({
       where: { followUpToken: token },
-      select: { id: true, followUpToken: true },
+      select: { id: true, followUpToken: true, followUpCompleted: true } as any,
     });
 
     if (!existing) {
