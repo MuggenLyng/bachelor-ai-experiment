@@ -441,11 +441,10 @@ export default function Home() {
                 <p className="text-sm font-semibold text-zinc-100 mb-1">Frivillig follow-up med giveaway!</p>
                 <p className="text-base text-zinc-200 leading-relaxed">
                   Til sidst får du desuden mulighed for at deltage i et kort follow-up-eksperiment
-                  ca. en uge fra testen — 10 deltagere trækkes til at vinde{" "}
+                  ca. en uge fra testen. 10 deltagere trækkes til at vinde{" "}
                   <span className="font-medium text-green-300">
                     100 kr.
                   </span>{" "}
-                  ved at deltage i follow-up testen!
                 </p>
               </div>
               <p className="text-sm text-zinc-400">
