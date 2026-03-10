@@ -20,9 +20,10 @@ export async function POST(req: Request) {
       );
     }
 
-    await prisma.participantLog.update({
+    await prisma.participantLog.upsert({
       where: { participantId },
-      data: { email, followUpToken },
+      update: { email, followUpToken },
+      create: { participantId, email, followUpToken },
       select: { id: true },
     });
 

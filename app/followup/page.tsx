@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 type Step = "intro" | "freeText" | "done" | "invalid";
@@ -13,6 +13,27 @@ function FollowUpExperiment() {
   const [step, setStep] = useState<Step>(token ? "intro" : "invalid");
   const [freeText, setFreeText] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // Restore state from localStorage on mount
+  useEffect(() => {
+    if (!token) return;
+    try {
+      const saved = localStorage.getItem(`followup_${token}`);
+      if (saved) {
+        const { step: savedStep, freeText: savedFreeText } = JSON.parse(saved);
+        if (savedStep) setStep(savedStep);
+        if (savedFreeText) setFreeText(savedFreeText);
+      }
+    } catch {}
+  }, []);
+
+  // Save state to localStorage on every change
+  useEffect(() => {
+    if (!token || step === "invalid") return;
+    try {
+      localStorage.setItem(`followup_${token}`, JSON.stringify({ step, freeText }));
+    } catch {}
+  }, [step, freeText, token]);
 
   const freeTextWordCount = freeText.trim()
     ? freeText.trim().split(/\s+/).length
