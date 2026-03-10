@@ -1085,6 +1085,7 @@ export default function Home() {
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
                           participantId,
+                          group,
                           email: followUpEmail,
                           followUpToken: token,
                         }),

@@ -7,8 +7,9 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    const { participantId, email, followUpToken } = body as {
+    const { participantId, group, email, followUpToken } = body as {
       participantId?: string;
+      group?: string;
       email?: string;
       followUpToken?: string;
     };
@@ -23,7 +24,7 @@ export async function POST(req: Request) {
     await prisma.participantLog.upsert({
       where: { participantId },
       update: { email, followUpToken },
-      create: { participantId, email, followUpToken } as any,
+      create: { participantId, group: group ?? "unknown", email, followUpToken } as any,
       select: { id: true },
     });
 
