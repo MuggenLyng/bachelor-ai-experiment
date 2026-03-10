@@ -14,7 +14,6 @@ export async function POST(req: Request) {
       gender,
       education,
       deviceType,
-      priorKnowledge,
       confidence,
       pretestQ1,
       pretestQ2,
@@ -29,7 +28,6 @@ export async function POST(req: Request) {
       gender?: string | null;
       education?: string | null;
       deviceType?: string | null;
-      priorKnowledge?: number | null;
       confidence?: number | null;
       pretestQ1?: number | null;
       pretestQ2?: number | null;
@@ -53,7 +51,6 @@ export async function POST(req: Request) {
     if (gender !== undefined)        data.gender = gender ?? null;
     if (education !== undefined)     data.education = education ?? null;
     if (deviceType !== undefined)    data.deviceType = deviceType ?? null;
-    if (priorKnowledge !== undefined) data.priorKnowledge = priorKnowledge ?? null;
     if (confidence !== undefined)    data.confidence = confidence ?? null;
     if (pretestQ1 !== undefined)     data.pretestQ1 = pretestQ1 ?? null;
     if (pretestQ2 !== undefined)     data.pretestQ2 = pretestQ2 ?? null;
@@ -62,13 +59,14 @@ export async function POST(req: Request) {
     if (pretestScore !== undefined)  data.pretestScore = pretestScore ?? null;
     if (dropoutStep !== undefined)   data.dropoutStep = dropoutStep ?? null;
 
-    const log = await prisma.participantLog.upsert({
+    await prisma.participantLog.upsert({
       where: { participantId },
       update: data as any,
       create: { participantId, ...data } as any,
+      select: { id: true },
     });
 
-    return NextResponse.json({ ok: true, log });
+    return NextResponse.json({ ok: true });
   } catch (err: any) {
     console.error("API /api/log error:", err);
     return NextResponse.json(

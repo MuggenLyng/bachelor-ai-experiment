@@ -32,7 +32,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const log = await prisma.participantLog.update({
+    await prisma.participantLog.update({
       where: { participantId },
       data: {
         trust1: trust1 ?? null,
@@ -42,9 +42,10 @@ export async function POST(req: Request) {
         engagement2: engagement2 ?? null,
         engagement3: engagement3 ?? null,
       },
+      select: { id: true },
     });
 
-    return NextResponse.json({ ok: true, log });
+    return NextResponse.json({ ok: true });
   } catch (err: any) {
     console.error("API /api/log-chat-survey error:", err);
     return NextResponse.json(

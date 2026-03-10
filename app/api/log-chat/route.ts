@@ -39,7 +39,7 @@ export async function POST(req: Request) {
     const chatMessageCount = messages.length;
     const chatTranscript = JSON.stringify(messages);
 
-    const log = await prisma.participantLog.update({
+    await prisma.participantLog.update({
       where: { participantId },
       data: {
         chatTranscript,
@@ -48,9 +48,10 @@ export async function POST(req: Request) {
         assistantMessageCount,
         dropoutStep: dropoutStep ?? null,
       },
+      select: { id: true },
     });
 
-    return NextResponse.json({ ok: true, log });
+    return NextResponse.json({ ok: true });
   } catch (err: any) {
     console.error("API /api/log-chat error:", err);
     return NextResponse.json(
