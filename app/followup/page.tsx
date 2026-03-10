@@ -155,9 +155,9 @@ function FollowUpExperiment() {
               vores bachelorprojekt og dermed til viden om, hvordan man bedst bruger Generativ AI!
             </p>
             <p className="text-base text-zinc-200 leading-relaxed">
-              Vi trækker lod om{" "}
-              <span className="font-medium text-green-400">100 kr.</span> inden
-              for de næste dage og kontakter vinderne (måske dig?!) på e-mail.
+              Vi trækker lod, og 10 vindere får{" "}
+              <span className="font-medium text-green-400">100 kr.</span> hver —
+              vi kontakter vinderne (måske dig?!) på e-mail inden for de næste dage.
             </p>
             <p className="text-sm text-zinc-400">— Ole og Magnus</p>
             <p className="text-sm text-zinc-400 italic">
