@@ -64,9 +64,14 @@ model ParticipantLog {
   completed            Boolean  @default(false)
   dropoutStep          String?
 
+  // timing (ms)
+  readingTime          Int?
+  chatDuration         Int?
+
   // follow-up system
   email                String?
   followUpToken        String?  @unique
+  followUpDeviceType   String?
 
   // follow-up study results
   followUpCompleted         Boolean   @default(false)

@@ -7,10 +7,11 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    const { token, followUpFreeText, followUpFreeTextWordCount } = body as {
+    const { token, followUpFreeText, followUpFreeTextWordCount, followUpDeviceType } = body as {
       token?: string;
       followUpFreeText?: string;
       followUpFreeTextWordCount?: number;
+      followUpDeviceType?: string | null;
     };
 
     if (!token) {
@@ -36,6 +37,7 @@ export async function POST(req: Request) {
       data: {
         followUpFreeText: followUpFreeText ?? null,
         followUpFreeTextWordCount: followUpFreeTextWordCount ?? null,
+        followUpDeviceType: followUpDeviceType ?? null,
         followUpCompleted: true,
         followUpCompletedAt: new Date(),
       } as any,

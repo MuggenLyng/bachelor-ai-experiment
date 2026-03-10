@@ -12,10 +12,11 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    const { participantId, messages, dropoutStep } = body as {
+    const { participantId, messages, dropoutStep, chatDuration } = body as {
       participantId?: string;
       messages?: ChatMessage[];
       dropoutStep?: string | null;
+      chatDuration?: number | null;
     };
 
     if (!participantId) {
@@ -46,8 +47,9 @@ export async function POST(req: Request) {
         chatMessageCount,
         userMessageCount,
         assistantMessageCount,
+        chatDuration: chatDuration ?? null,
         dropoutStep: dropoutStep ?? null,
-      },
+      } as any,
       select: { id: true },
     });
 

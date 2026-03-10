@@ -15,6 +15,7 @@ export async function POST(req: Request) {
       education,
       deviceType,
       confidence,
+      readingTime,
       pretestQ1,
       pretestQ2,
       pretestQ3,
@@ -29,6 +30,7 @@ export async function POST(req: Request) {
       education?: string | null;
       deviceType?: string | null;
       confidence?: number | null;
+      readingTime?: number | null;
       pretestQ1?: number | null;
       pretestQ2?: number | null;
       pretestQ3?: number | null;
@@ -52,6 +54,7 @@ export async function POST(req: Request) {
     if (education !== undefined)     data.education = education ?? null;
     if (deviceType !== undefined)    data.deviceType = deviceType ?? null;
     if (confidence !== undefined)    data.confidence = confidence ?? null;
+    if (readingTime !== undefined)   data.readingTime = readingTime ?? null;
     if (pretestQ1 !== undefined)     data.pretestQ1 = pretestQ1 ?? null;
     if (pretestQ2 !== undefined)     data.pretestQ2 = pretestQ2 ?? null;
     if (pretestQ3 !== undefined)     data.pretestQ3 = pretestQ3 ?? null;

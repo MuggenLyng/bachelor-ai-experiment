@@ -13,6 +13,11 @@ function FollowUpExperiment() {
   const [step, setStep] = useState<Step>(token ? "intro" : "invalid");
   const [freeText, setFreeText] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [followUpDeviceType, setFollowUpDeviceType] = useState<string | null>(null);
+
+  useEffect(() => {
+    setFollowUpDeviceType(window.innerWidth < 768 ? "mobile" : "desktop");
+  }, []);
 
   // Restore state from localStorage on mount
   useEffect(() => {
@@ -48,6 +53,7 @@ function FollowUpExperiment() {
         token,
         followUpFreeText: freeText,
         followUpFreeTextWordCount: freeTextWordCount,
+        followUpDeviceType,
       }),
     });
     setSubmitting(false);

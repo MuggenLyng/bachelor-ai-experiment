@@ -127,6 +127,10 @@ export default function Home() {
   const chatStartTimeRef = useRef<number | null>(null);
   const [timeLeft, setTimeLeft] = useState(CHAT_DURATION);
 
+  // Timing refs
+  const readStartTimeRef = useRef<number | null>(null);
+  const readingTimeRef = useRef<number | null>(null);
+
   // Chat survey
   const [trust, setTrust] = useState<(number | null)[]>([null, null, null]);
   const [engagement, setEngagement] = useState<(number | null)[]>([null, null, null]);
@@ -342,6 +346,7 @@ export default function Home() {
         participantId,
         group,
         confidence,
+        readingTime: readingTimeRef.current,
       }),
     });
     if (!res.ok) {
@@ -351,10 +356,11 @@ export default function Home() {
   };
 
   const logChat = async () => {
+    const chatDuration = chatStartTimeRef.current ? Date.now() - chatStartTimeRef.current : null;
     const res = await fetch("/api/log-chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ participantId, messages }),
+      body: JSON.stringify({ participantId, messages, chatDuration }),
     });
     if (!res.ok) {
       const data = await res.json();
@@ -669,6 +675,7 @@ export default function Home() {
                 disabled={pretestAnswers.some((a) => a === null)}
                 onClick={async () => {
                   await logBaseline();
+                  readStartTimeRef.current = Date.now();
                   setStep("read");
                 }}
               >
@@ -702,7 +709,12 @@ export default function Home() {
               </button>
               <button
                 className="rounded-lg bg-black text-white px-4 py-2"
-                onClick={() => setStep("zpd")}
+                onClick={() => {
+                  if (readStartTimeRef.current) {
+                    readingTimeRef.current = Date.now() - readStartTimeRef.current;
+                  }
+                  setStep("zpd");
+                }}
               >
                 Videre →
               </button>
