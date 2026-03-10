@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     await prisma.participantLog.upsert({
       where: { participantId },
       update: { email, followUpToken },
-      create: { participantId, email, followUpToken },
+      create: { participantId, email, followUpToken } as any,
       select: { id: true },
     });
 
