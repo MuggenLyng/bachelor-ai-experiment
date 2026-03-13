@@ -25,40 +25,47 @@ const CHAT_DURATION = 5 * 60; // 300 sekunder
 
 const PRETEST_QUESTIONS = [
   {
-    question: "Hvad leverer mRNA-vacciner ind i kroppens celler?",
+    question:
+      "Hvis en person begynder at motionere betydeligt mere end før, hvad vil der sandsynligvis ske med personens samlede energiforbrug (TEE)?",
     options: [
-      "Et svækket virus",
-      "Et lille stykke genetisk materiale (mRNA)",
-      "Et antibiotikum",
+      "Det vil stige proportionalt med mængden af motion",
+      "Det vil stige, men ikke nødvendigvis proportionalt",
+      "Det vil falde",
+      "Det vil være helt uændret",
     ],
     correct: 1,
   },
   {
-    question: "Hvad bruger cellerne mRNA-instruktionerne til?",
+    question:
+      "Hvad udgør typisk den største del af en persons daglige energiforbrug?",
     options: [
-      "At producere antistoffer direkte",
-      "At producere et ufarligt stykke virusprotein",
-      "At ødelægge virussen",
-    ],
-    correct: 1,
-  },
-  {
-    question: "Hvad sker der, efter cellerne producerer virusproteinet?",
-    options: [
-      "Immunforsvaret starter en betændelsesreaktion",
-      "Immunforsvaret lærer at genkende virussen",
-      "Kroppen producerer mere mRNA",
-    ],
-    correct: 1,
-  },
-  {
-    question: "Hvad er den vigtigste fordel ved mRNA-vacciner ifølge teksten?",
-    options: [
-      "De er billigere end traditionelle vacciner",
-      "De kan helbrede sygdomme",
-      "Immunforsvaret lærer at genkende virussen uden at blive eksponeret for den",
+      "Fysisk aktivitet",
+      "Fordøjelse af mad",
+      "Basal metabolic rate (BMR)",
+      "Hjernens aktivitet",
     ],
     correct: 2,
+  },
+  {
+    question:
+      "Ifølge constrained energy model, hvad kan kroppen gøre, når en person øger sit aktivitetsniveau?",
+    options: [
+      "Øge energiindtaget automatisk",
+      "Reducere energiforbruget i andre biologiske processer",
+      "Forbrænde fedt hurtigere end normalt",
+      "Øge BMR proportionalt med aktiviteten",
+    ],
+    correct: 1,
+  },
+  {
+    question: "Hvad beskriver basal metabolic rate (BMR) bedst?",
+    options: [
+      "Energiforbrug under intens træning",
+      "Energiforbrug i hvile til grundlæggende kropsfunktioner",
+      "Energi kroppen bruger på fordøjelse",
+      "Energi kroppen bruger til muskelopbygning",
+    ],
+    correct: 1,
   },
 ];
 
@@ -100,6 +107,7 @@ function loadSavedState(): Record<string, any> | null {
 export default function Home() {
   const [step, setStep] = useState<Step>("consent");
   const [consented, setConsented] = useState(false);
+  const [consentedAge, setConsentedAge] = useState(false);
 
   const [group, setGroup] = useState<Group | null>(null);
   const [participantId, setParticipantId] = useState<string | null>(null);
@@ -188,6 +196,7 @@ export default function Home() {
     if (!saved) return;
     if (saved.step) setStep(saved.step);
     if (saved.consented) setConsented(saved.consented);
+    if (saved.consentedAge) setConsentedAge(saved.consentedAge);
     if (saved.age) setAge(saved.age);
     if (saved.gender) setGender(saved.gender);
     if (saved.education) setEducation(saved.education);
@@ -212,13 +221,13 @@ export default function Home() {
   useEffect(() => {
     try {
       localStorage.setItem("experimentState", JSON.stringify({
-        step, consented, age, gender, education, confidence, pretestAnswers,
+        step, consented, consentedAge, age, gender, education, confidence, pretestAnswers,
         messages, chatStartTime: chatStartTimeRef.current,
         trust, engagement, freeTextResponse, perceivedLearning, mentalEffort,
         followUpEmail, followUpSubmitted,
       }));
     } catch {}
-  }, [step, consented, age, gender, education, confidence, pretestAnswers,
+  }, [step, consented, consentedAge, age, gender, education, confidence, pretestAnswers,
       messages, trust, engagement, freeTextResponse, perceivedLearning,
       mentalEffort, followUpEmail, followUpSubmitted]);
 
@@ -441,9 +450,9 @@ export default function Home() {
                 <p className="text-sm font-semibold text-zinc-100 mb-1">Frivillig follow-up med giveaway!</p>
                 <p className="text-base text-zinc-200 leading-relaxed">
                   Til sidst får du desuden mulighed for at deltage i et kort follow-up-eksperiment
-                  ca. en uge fra testen. 10 deltagere trækkes til at vinde{" "}
+                  ca. en uge fra testen.{" "}
                   <span className="font-medium text-green-300">
-                    100 kr.
+                  10 deltagere trækkes til at vinde 100 kr.
                   </span>{" "}
                 </p>
               </div>
@@ -453,7 +462,8 @@ export default function Home() {
             </div>
 
             {/* Nested GDPR box */}
-            <div className="rounded-lg border border-zinc-700 bg-zinc-800 p-4 space-y-3 text-xs text-zinc-300 leading-relaxed">
+            <div className="rounded-lg border border-zinc-700 bg-zinc-800 text-xs text-zinc-300 leading-relaxed overflow-hidden">
+            <div className="overflow-y-auto max-h-72 p-4 space-y-3">
               <p className="font-semibold text-zinc-100 text-sm">
                 Samtykke til deltagelse i forskningsstudie
               </p>
@@ -475,10 +485,15 @@ export default function Home() {
               <div>
                 <p className="font-medium text-zinc-200">Hvad indebærer deltagelse</p>
                 <ul className="list-disc list-inside space-y-0.5 mt-0.5">
-                  <li>Besvare korte spørgsmål om din baggrund</li>
-                  <li>Læse en kort tekst og besvare en forståelsesquiz</li>
+                  <li>Besvare korte spørgsmål om din baggrund (alder, køn, uddannelse)</li>
+                  <li>Besvare en kort pretest</li>
+                  <li>Læse en kort informationstekst</li>
+                  <li>Besvare et spørgsmål om din forståelsesniveau</li>
                   <li>Chatte med en AI-assistent i ca. 5 minutter</li>
-                  <li>Besvare spørgsmål om din oplevelse og forståelse</li>
+                  <li>Besvare spørgsmål om din oplevelse</li>
+                  <li>Skrive en kort forklaring med egne ord</li>
+                  <li>Besvare spørgsmål om din læring</li>
+                  <li>Mulighed for at deltage i follow-up testen!</li>
                 </ul>
               </div>
 
@@ -492,9 +507,34 @@ export default function Home() {
                   <li>Tekniske interaktionsdata (fx antal beskeder og tidsstempler)</li>
                 </ul>
                 <p className="mt-1">
-                  Dine svar gemmes under et anonymt deltager-ID og kan ikke direkte knyttes til
-                  din identitet. Angiver du en e-mail til giveawayen, opbevares den adskilt fra
-                  dine øvrige svar.
+                Dine svar gemmes under et pseudonymiseret deltager-ID. 
+                Hvis du angiver en e-mail til follow-up studiet, bruges den kun til at sende 
+                et opfølgningslink og slettes efter follow-up studiet er afsluttet.
+                </p>
+              </div>
+
+              <div>
+                <p className="font-medium text-zinc-200">Teknisk behandling af data</p>
+                <p>
+                  Studiet gennemføres via en webapplikation hostet hos Vercel. Dine svar gemmes i
+                  en database (PostgreSQL) hos en cloud-udbyder.
+                </p>
+                <p className="mt-1">
+                  Under chatdelen behandles beskeder af en AI-model via OpenAI's API. Kun de
+                  oplysninger, du selv skriver i chatten eller i spørgeskemaet, sendes til disse
+                  tjenester. Oplysningerne anvendes udelukkende til at gennemføre studiet og
+                  anvendes ikke til træning af AI-modellen.
+                </p>
+                <p className="mt-1">
+                  Undlad venligst at skrive personlige eller følsomme oplysninger i chatten.
+                </p>
+              </div>
+
+              <div>
+                <p className="font-medium text-zinc-200">Retsgrundlag</p>
+                <p>
+                  Dine personoplysninger behandles på baggrund af dit samtykke i henhold til
+                  GDPR artikel 6, stk. 1, litra a.
                 </p>
               </div>
 
@@ -502,39 +542,68 @@ export default function Home() {
                 <p className="font-medium text-zinc-200">Frivillighed</p>
                 <p>
                   Deltagelse er helt frivillig. Du kan til enhver tid stoppe ved at lukke siden
-                  uden negative konsekvenser.
+                  uden negative konsekvenser. Du kan også trække dit samtykke tilbage ved at
+                  kontakte os og få indsigt i din data ved efterspørgelse.
                 </p>
               </div>
 
               <div>
                 <p className="font-medium text-zinc-200">Opbevaring af data</p>
                 <p>
-                Data opbevares under et pseudonymiseret deltager-ID og bruges udelukkende til forskningsformål i forbindelse med bachelorprojektet udført af Ole Thomassen og Magnus Lyng ved Københavns Universitet. 
-                <br />Data opbevares i samlet og anonymiseret form og slettes senest efter projektets afslutning.
+                  Data opbevares pseudonymiseret og bruges udelukkende til forskningsformål i
+                  forbindelse med bachelorprojektet. Data slettes eller anonymiseres senest
+                  6 måneder efter projektets afslutning.
                 </p>
               </div>
 
               <div>
+                <p className="font-medium text-zinc-200">Dine rettigheder</p>
+                <p>
+                  Du har ret til indsigt i, rettelse og sletning af dine oplysninger samt ret
+                  til at begrænse behandlingen. Du har desuden ret til at klage til{" "}
+                  <span className="text-zinc-200">Datatilsynet</span> (datatilsynet.dk).
+                </p>
+              </div>
+
+              <div>
+                <p className="font-medium text-zinc-200">Dataansvarlig</p>
+                <p>Magnus Lyng og Ole Thomassen, bachelorstuderende ved Københavns Universitet.</p>
+              </div>
+
+              <div>
                 <p className="font-medium text-zinc-200">Kontakt</p>
-                <p>Magnus Lyng: lyngmagnus@gmail.com <br /> ole Thomassen: ole-thomassen@hotmail.com</p>
+                <p>Magnus Lyng: lyngmagnus@gmail.com <br /> Ole Thomassen: ole-thomassen@hotmail.com</p>
               </div>
             </div>
+            </div>
 
-            <label className="flex items-start gap-3 text-sm pt-1">
-              <input
-                type="checkbox"
-                className="mt-1"
-                checked={consented}
-                onChange={(e) => setConsented(e.target.checked)}
-              />
-              <span>
-                Jeg har læst ovenstående og giver samtykke til deltagelse og databehandling.
-              </span>
-            </label>
+            <div className="space-y-2 pt-1">
+              <label className="flex items-start gap-3 text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={consentedAge}
+                  onChange={(e) => setConsentedAge(e.target.checked)}
+                />
+                <span>Jeg bekræfter, at jeg er mindst 18 år.</span>
+              </label>
+              <label className="flex items-start gap-3 text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={consented}
+                  onChange={(e) => setConsented(e.target.checked)}
+                />
+                <span>
+                  Jeg har læst informationen ovenfor og giver samtykke til at deltage i studiet
+                  og til behandling af mine oplysninger som beskrevet.
+                </span>
+              </label>
+            </div>
             <div className="flex justify-end">
               <button
                 className="rounded-lg bg-zinc-700 text-white px-4 py-2 disabled:opacity-40"
-                disabled={!consented}
+                disabled={!consented || !consentedAge}
                 onClick={() => setStep("demographics")}
               >
                 Næste →
@@ -687,16 +756,41 @@ export default function Home() {
         {/* READ */}
         {step === "read" && (
           <section className="bg-zinc-900 rounded-xl border p-5 border-zinc-800 space-y-4">
-            <h2 className="text-lg font-semibold text-center">Informationstekst</h2>
+            <h2 className="text-lg font-semibold text-center">Hvordan bruger kroppen energi?</h2>
             <p className="text-sm opacity-90">
               Læs teksten nedenfor grundigt — du får brug for den i næste trin.
             </p>
-            <div className="rounded-lg bg-zinc-700 p-4 text-sm leading-relaxed opacity-90">
-              <p className="mt-2">
-                mRNA vaccines work by delivering a small piece of genetic material (mRNA)
-                into the body's cells. The cells use this mRNA as instructions to produce
-                a harmless piece of a virus protein, which then triggers an immune response.
-                The immune system learns to recognize the virus without being exposed to it.
+            <div className="rounded-lg bg-zinc-700 p-4 text-sm leading-relaxed opacity-90 space-y-3">
+              <p>
+                Kroppens energibalance kan forstås gennem forholdet mellem energiindtag (Energy
+                Intake, EI) og energiforbrug (Total Energy Expenditure, TEE). Energiindtag kommer
+                fra den mad og de drikkevarer, vi indtager, mens energiforbrug er den samlede
+                mængde energi kroppen bruger i løbet af dagen.
+              </p>
+              <p>
+                Hvis en person indtager mere energi (EI), end kroppen bruger (TEE), lagres
+                overskydende energi i kroppen som energidepoter, for eksempel fedt. Hvis kroppen
+                derimod bruger mere energi, end man indtager, vil den trække på disse depoter,
+                hvilket over tid kan føre til vægttab. Denne relation kan udtrykkes som: ændring
+                i energidepoter = EI − TEE.
+              </p>
+              <p>
+                En stor del af energiforbruget kommer fra basal metabolic rate (BMR), som er den
+                energi kroppen bruger i hvile til grundlæggende funktioner som vejrtrækning,
+                blodcirkulation og regulering af kropstemperatur. Derudover bruges energi på
+                fysisk aktivitet, for eksempel når man går, træner eller udfører daglige opgaver.
+              </p>
+              <p>
+                Man kunne derfor forvente, at mere fysisk aktivitet lineært øger det samlede
+                energiforbrug. Forskning tyder dog på, at kroppen delvist kan tilpasse sit
+                energiforbrug. Ifølge den såkaldte constrained energy model kan kroppen reducere
+                energiforbruget i andre biologiske processer, når aktivitetsniveauet stiger.
+              </p>
+              <p>
+                Det betyder, at det samlede energiforbrug ikke nødvendigvis stiger proportionalt
+                med mængden af motion. Kroppen kan i stedet kompensere ved at bruge mindre energi
+                på andre processer. Derfor kan effekten af øget fysisk aktivitet på energiforbrug
+                og vægttab være mindre, end man umiddelbart skulle tro.
               </p>
             </div>
             <div className="flex justify-between">
@@ -751,6 +845,10 @@ export default function Home() {
                 disabled={!zpdValid}
                 onClick={async () => {
                   await logZPD();
+                  setMessages([{
+                    role: "assistant",
+                    content: "Du har nu læst teksten. Hvad vil du gerne have hjælp til at forstå bedre?",
+                  }]);
                   setStep("chat");
                 }}
               >
@@ -778,14 +876,12 @@ export default function Home() {
             <p className="text-sm text-zinc-400">
               Stil spørgsmål til teksten du netop har læst. AI'en kan hjælpe dig med at forstå den bedre. Du kan gå videre efter 5 minutter.
             </p>
+            <p className="text-xs text-zinc-500">
+              Undlad venligst at skrive personlige eller følsomme oplysninger i chatten.
+            </p>
 
             <div className="flex flex-col h-[55vh] rounded-xl border border-zinc-800 overflow-hidden">
               <div className="flex-1 overflow-y-auto bg-zinc-900 p-4 space-y-3">
-                {messages.length === 0 && (
-                  <div className="text-sm text-zinc-400">
-                    Skriv en besked for at starte chatten.
-                  </div>
-                )}
                 {messages.map((m, i) => (
                   <div
                     key={i}
@@ -941,9 +1037,13 @@ export default function Home() {
         {/* FREE TEXT */}
         {step === "freeText" && (
           <section className="bg-zinc-900 rounded-xl border p-5 border-zinc-800 space-y-4">
-            <h2 className="text-lg font-semibold text-center">Forklar teksten med egne ord</h2>
+            <h2 className="text-lg font-semibold text-center">Anvend teksten i et scenarie</h2>
             <p className="text-sm opacity-90">
-              Forklar med egne ord, hvordan mRNA-vacciner virker. Skriv så meget du kan.
+              En person begynder at motionere meget mere end før, men oplever, at vægttabet er
+              mindre end forventet.
+            </p>
+            <p className="text-sm opacity-90">
+              Forklar med egne ord, hvorfor dette kan ske ud fra modellen i teksten.
             </p>
             <textarea
               className="w-full rounded-lg bg-zinc-800 text-white px-3 py-2 outline-none placeholder:text-zinc-500 resize-none h-40"
@@ -963,7 +1063,7 @@ export default function Home() {
               </button>
               <button
                 className="rounded-lg bg-zinc-700 text-white px-4 py-2 disabled:opacity-40"
-                disabled={freeTextWordCount < 5}
+                disabled={freeTextWordCount < 50}
                 onClick={() => setStep("learningSurvey")}
               >
                 Videre →
