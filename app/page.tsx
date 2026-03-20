@@ -391,10 +391,10 @@ export default function Home() {
       body: JSON.stringify({
         participantId,
         group,
-        pretestQ1: pretestAnswers[0],
-        pretestQ2: pretestAnswers[1],
-        pretestQ3: pretestAnswers[2],
-        pretestQ4: pretestAnswers[3],
+        pretestQ1: pretestAnswers[0] === activeQuestions[0].correct ? 1 : 0,
+        pretestQ2: pretestAnswers[1] === activeQuestions[1].correct ? 1 : 0,
+        pretestQ3: pretestAnswers[2] === activeQuestions[2].correct ? 1 : 0,
+        pretestQ4: pretestAnswers[3] === activeQuestions[3].correct ? 1 : 0,
         pretestScore,
       }),
     });
@@ -408,10 +408,10 @@ export default function Home() {
     const payload = {
       participantId,
       group,
-      posttestQ1: posttestAnswers[0],
-      posttestQ2: posttestAnswers[1],
-      posttestQ3: posttestAnswers[2],
-      posttestQ4: posttestAnswers[3],
+      posttestQ1: posttestAnswers[0] === activeQuestions[0].correct ? 1 : 0,
+      posttestQ2: posttestAnswers[1] === activeQuestions[1].correct ? 1 : 0,
+      posttestQ3: posttestAnswers[2] === activeQuestions[2].correct ? 1 : 0,
+      posttestQ4: posttestAnswers[3] === activeQuestions[3].correct ? 1 : 0,
       posttestScore,
     };
     console.log("logPosttest sending:", payload);
@@ -663,7 +663,7 @@ export default function Home() {
             </div>
 
             <div className="space-y-2 pt-1">
-              <label className="flex items-start gap-3 text-sm">
+              <label className="flex items-start gap-3 text-sm text-zinc-200">
                 <input
                   type="checkbox"
                   className="mt-1"
@@ -672,7 +672,7 @@ export default function Home() {
                 />
                 <span>Jeg bekræfter, at jeg er mindst 18 år.</span>
               </label>
-              <label className="flex items-start gap-3 text-sm">
+              <label className="flex items-start gap-3 text-sm text-zinc-200">
                 <input
                   type="checkbox"
                   className="mt-1"
@@ -701,7 +701,7 @@ export default function Home() {
         {step === "demographics" && (
           <section className="bg-zinc-900 rounded-xl border p-5 border-zinc-800 space-y-5">
             <h2 className="text-lg font-semibold text-center">Baggrundsspørgsmål</h2>
-            <p className="text-sm opacity-90">
+            <p className="text-sm text-zinc-300">
               Besvar disse korte spørgsmål om dig selv.
             </p>
 
@@ -782,7 +782,7 @@ export default function Home() {
         {step === "pretest" && (
           <section className="bg-zinc-900 rounded-xl border p-5 border-zinc-800 space-y-5">
             <h2 className="text-lg font-semibold text-center">Pretest</h2>
-            <p className="text-sm opacity-90">
+            <p className="text-sm text-zinc-300">
               Besvar disse 4 spørgsmål. Svar/gæt dit bedste :) der er ingen konsekvenser.
             </p>
 
@@ -845,10 +845,10 @@ export default function Home() {
         {step === "read" && (
           <section className="bg-zinc-900 rounded-xl border p-5 border-zinc-800 space-y-4">
             <h2 className="text-lg font-semibold text-center">Hvordan bruger kroppen energi?</h2>
-            <p className="text-sm opacity-90">
+            <p className="text-sm text-zinc-300">
               Læs teksten nedenfor grundigt — du får brug for den i næste trin.
             </p>
-            <div className="rounded-lg bg-zinc-700 p-4 text-sm leading-relaxed opacity-90 space-y-3">
+            <div className="rounded-lg bg-zinc-700 p-4 text-sm leading-relaxed text-zinc-200 space-y-3">
               <p>
                 Kroppens energibalance kan forstås gennem forholdet mellem energiindtag (Energy
                 Intake, EI) og energiforbrug (Total Energy Expenditure, TEE). Energiindtag kommer
@@ -907,7 +907,7 @@ export default function Home() {
         {step === "zpd" && (
           <section className="bg-zinc-900 rounded-xl border p-5 border-zinc-800 space-y-5">
             <h2 className="text-lg font-semibold text-center">Selvvurdering</h2>
-            <p className="text-sm opacity-90">
+            <p className="text-sm text-zinc-300">
               I hvilken grad føler du, at følgende gælder for dig i forhold til det materiale, du
               lige har læst?
             </p>
@@ -1062,11 +1062,11 @@ export default function Home() {
         {step === "freeText" && (
           <section className="bg-zinc-900 rounded-xl border p-5 border-zinc-800 space-y-4">
             <h2 className="text-lg font-semibold text-center">Anvend teksten i et scenarie</h2>
-            <p className="text-sm opacity-90">
+            <p className="text-sm text-zinc-300">
               En person begynder at motionere meget mere end før, men oplever, at vægttabet er
               mindre end forventet.
             </p>
-            <p className="text-sm opacity-90">
+            <p className="text-sm text-zinc-300">
               Forklar med egne ord, hvorfor dette kan ske ud fra modellen i teksten.
             </p>
             <textarea
@@ -1094,7 +1094,7 @@ export default function Home() {
         {step === "posttest" && (
           <section className="bg-zinc-900 rounded-xl border p-5 border-zinc-800 space-y-5">
             <h2 className="text-lg font-semibold text-center">Post-test</h2>
-            <p className="text-sm opacity-90">
+            <p className="text-sm text-zinc-300">
               Besvar de samme 4 spørgsmål som i starten.
             </p>
 
@@ -1161,7 +1161,7 @@ export default function Home() {
         {step === "survey" && (
           <section className="bg-zinc-900 rounded-xl border p-5 border-zinc-800 space-y-5">
             <h2 className="text-lg font-semibold text-center">Afsluttende spørgsmål</h2>
-            <p className="text-sm opacity-90">
+            <p className="text-sm text-zinc-300">
               Besvar disse spørgsmål om din oplevelse og indsats.
             </p>
 
@@ -1324,11 +1324,11 @@ export default function Home() {
           <section className="space-y-6 rounded-xl border p-6 border-zinc-800 bg-zinc-900">
             <div className="space-y-2">
               <h2 className="text-xl font-semibold text-center">Tak fordi du ville være med!</h2>
-              <p className="text-sm opacity-90 leading-relaxed">
+              <p className="text-sm text-zinc-300 leading-relaxed">
                 Det betyder så meget for os, at DU ville være med! Dine svar vil bidrage til vores
                 bachelorprojekt i psykologi.
               </p>
-              <p className="text-sm opacity-70">— Ole og Magnus</p>
+              <p className="text-sm text-zinc-400">— Ole og Magnus</p>
               <p className="text-sm text-zinc-500 italic">
                 Hvis i har nogle spørgsmål kan i evt. kontakte os på:<br/>
                 lyngmagnus@gmail.com<br/>
