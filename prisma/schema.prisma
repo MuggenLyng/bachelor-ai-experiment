@@ -33,6 +33,12 @@ model ParticipantLog {
   pretestQ4            Int?
   pretestScore         Int?
 
+  posttestQ1           Int?
+  posttestQ2           Int?
+  posttestQ3           Int?
+  posttestQ4           Int?
+  posttestScore        Int?
+
   // chat analytics
   chatTranscript       String?
   chatMessageCount     Int?
