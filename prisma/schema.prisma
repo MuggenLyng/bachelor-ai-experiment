@@ -45,14 +45,10 @@ model ParticipantLog {
   userMessageCount     Int?
   assistantMessageCount Int?
 
-  // post-chat survey
-  trust1               Int?
-  trust2               Int?
-  trust3               Int?
-
-  engagement1          Int?
-  engagement2          Int?
-  engagement3          Int?
+  // EVT (Expectancy-Value Theory, 1-4)
+  evt1                 Int?
+  evt2                 Int?
+  evt3                 Int?
 
   // free text
   freeTextResponse     String?

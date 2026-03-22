@@ -12,17 +12,11 @@ export async function POST(req: Request) {
       trust1,
       trust2,
       trust3,
-      engagement1,
-      engagement2,
-      engagement3,
     } = body as {
       participantId?: string;
       trust1?: number | null;
       trust2?: number | null;
       trust3?: number | null;
-      engagement1?: number | null;
-      engagement2?: number | null;
-      engagement3?: number | null;
     };
 
     if (!participantId) {
@@ -38,9 +32,6 @@ export async function POST(req: Request) {
         trust1: trust1 ?? null,
         trust2: trust2 ?? null,
         trust3: trust3 ?? null,
-        engagement1: engagement1 ?? null,
-        engagement2: engagement2 ?? null,
-        engagement3: engagement3 ?? null,
       },
       select: { id: true },
     });

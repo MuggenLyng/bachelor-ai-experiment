@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 
 type Step =
   | "consent"
@@ -154,9 +155,8 @@ export default function Home() {
   const readStartTimeRef = useRef<number | null>(null);
   const readingTimeRef = useRef<number | null>(null);
 
-  // Chat survey
-  const [trust, setTrust] = useState<(number | null)[]>([null, null, null]);
-  const [engagement, setEngagement] = useState<(number | null)[]>([null, null, null]);
+  // EVT (Expectancy-Value Theory, logged with ZPD)
+  const [evt, setEvt] = useState<(number | null)[]>([null, null, null]);
 
   // Free text
   const [freeTextResponse, setFreeTextResponse] = useState("");
@@ -235,8 +235,7 @@ export default function Home() {
       const elapsed = Math.floor((Date.now() - saved.chatStartTime) / 1000);
       setTimeLeft(Math.max(0, CHAT_DURATION - elapsed));
     }
-    if (saved.trust) setTrust(saved.trust);
-    if (saved.engagement) setEngagement(saved.engagement);
+    if (saved.evt) setEvt(saved.evt);
     if (saved.freeTextResponse) setFreeTextResponse(saved.freeTextResponse);
     if (saved.perceivedLearning) setPerceivedLearning(saved.perceivedLearning);
     if (saved.mentalEffort != null) setMentalEffort(saved.mentalEffort);
@@ -253,14 +252,14 @@ export default function Home() {
   useEffect(() => {
     try {
       localStorage.setItem("experimentState", JSON.stringify({
-        step, consented, consentedAge, age, gender, education, selfEfficacy, pretestAnswers,
+        step, consented, consentedAge, age, gender, education, selfEfficacy, evt, pretestAnswers,
         posttestAnswers, messages, chatStartTime: chatStartTimeRef.current,
-        trust, engagement, freeTextResponse, perceivedLearning, mentalEffort,
+        freeTextResponse, perceivedLearning, mentalEffort,
         followUpEmail, followUpSubmitted, shuffledQuestions,
       }));
     } catch {}
-  }, [step, consented, consentedAge, age, gender, education, selfEfficacy, pretestAnswers,
-      posttestAnswers, messages, trust, engagement, freeTextResponse, perceivedLearning,
+  }, [step, consented, consentedAge, age, gender, education, selfEfficacy, evt, pretestAnswers,
+      posttestAnswers, messages, freeTextResponse, perceivedLearning,
       mentalEffort, followUpEmail, followUpSubmitted, shuffledQuestions]);
 
   // Chat timer
@@ -306,7 +305,7 @@ export default function Home() {
   const confidenceScore = selfEfficacy.every((v) => v !== null)
     ? Math.round(selfEfficacy.reduce<number>((s, v) => s + (v ?? 0), 0) / 3)
     : null;
-  const zpdValid = selfEfficacy.every((v) => v !== null);
+  const zpdValid = selfEfficacy.every((v) => v !== null) && evt.every((v) => v !== null);
 
   // --- UI helper ---
   const likertBtn = (
@@ -436,6 +435,9 @@ export default function Home() {
         group,
         confidence: confidenceScore,
         readingTime: readingTimeRef.current,
+        evt1: evt[0],
+        evt2: evt[1],
+        evt3: evt[2],
       }),
     });
     if (!res.ok) {
@@ -458,23 +460,7 @@ export default function Home() {
   };
 
   const logChatSurvey = async () => {
-    const res = await fetch("/api/log-chat-survey", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        participantId,
-        trust1: trust[0],
-        trust2: trust[1],
-        trust3: trust[2],
-        engagement1: engagement[0],
-        engagement2: engagement[1],
-        engagement3: engagement[2],
-      }),
-    });
-    if (!res.ok) {
-      const data = await res.json();
-      console.error("logChatSurvey failed:", data.error);
-    }
+    // no-op: trust removed, kept for call-site compatibility
   };
 
   const logLearningSurvey = async () => {
@@ -507,12 +493,22 @@ export default function Home() {
 
         {/* CONSENT */}
         {step === "consent" && (
+          
           <section className="bg-zinc-900 rounded-xl border p-6 border-zinc-800 space-y-5">
             {/* Welcome header */}
             <div className="space-y-3">
               <h2 className="text-2xl font-bold text-zinc-50 leading-snug">
                 Velkommen til Magnus og Oles bacheloreksperiment!
               </h2>
+              <div style={{ display: "flex", justifyContent: "center" }}>
+                <Image
+                  src="/researchers.jpeg"
+                  alt="Magnus og Ole"
+                  width={300}
+                  height={200}
+                  style={{ borderRadius: "8px" }}
+                />
+              </div>
               <p className="text-base text-zinc-200 leading-relaxed">
               Mange tak fordi du har lyst til at bruge lidt tid på dette eksperiment om GenAI og læring:) Det
                 betyder virkelig meget for os!
@@ -934,6 +930,30 @@ export default function Home() {
               ))}
             </div>
 
+            <div className="space-y-3 pt-2">
+              <p className="text-sm font-semibold text-zinc-100">Vurdering af teksten</p>
+              <p className="text-sm text-zinc-300">I hvilken grad passer følgende udsagn på dig?</p>
+              {[
+                "At kende indholdet i denne tekst godt vil være nyttigt for mig i fremtiden.",
+                "Det er vigtigt for mig at forstå indholdet i denne tekst godt.",
+                "Jeg kan godt lide indholdet af teksten.",
+              ].map((q, qi) => (
+                <div key={qi} className="rounded-lg border border-zinc-700 bg-zinc-800 p-4 space-y-2">
+                  <p className="text-sm text-zinc-100">{q}</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {[1, 2, 3, 4].map((n) =>
+                      likertBtn(n, evt[qi], (val) => {
+                        const next = [...evt];
+                        next[qi] = val;
+                        setEvt(next);
+                      })
+                    )}
+                  </div>
+                  <p className="text-xs text-zinc-400">1 = Passer ikke · 2 = Passer næsten ikke · 3 = Passer næsten · 4 = Passer fuldt</p>
+                </div>
+              ))}
+            </div>
+
             <div className="flex justify-between pt-2">
               <button
                 className="rounded-lg border px-4 py-2 border-zinc-800 text-zinc-100"
@@ -1165,73 +1185,6 @@ export default function Home() {
               Besvar disse spørgsmål om din oplevelse og indsats.
             </p>
 
-            <div className="space-y-3">
-              <p className="text-base font-bold text-zinc-100">Tillid til AI-assistenten</p>
-              <p className="text-xs text-zinc-400">I hvilken grad er du enig i følgende udsagn om AI-assistenten?</p>
-              {[
-                "Jeg har tillid til AI-assistenten.",
-                "AI-assistenten er pålidelig.",
-                "Jeg er sikker på AI-assistentens evner.",
-              ].map((q, qi) => (
-                <div key={qi} className="rounded-lg border border-zinc-700 bg-zinc-800 p-4 space-y-2">
-                  <p className="text-sm text-zinc-100">{q}</p>
-                  <div className="flex gap-2 flex-wrap">
-                    {[1, 2, 3, 4, 5, 6, 7].map((n) =>
-                      likertBtn(n, trust[qi], (val) => {
-                        const next = [...trust];
-                        next[qi] = val;
-                        setTrust(next);
-                      })
-                    )}
-                  </div>
-                  <p className="text-xs text-zinc-400">1 = Slet ikke · 7 = I meget høj grad</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="space-y-3 pt-2">
-              <p className="text-base font-bold text-zinc-100">Engagement</p>
-              <p className="text-xs text-zinc-400">Under opgaven, i hvilken grad oplevede du følgende?</p>
-              {[
-                "Jeg følte mig fuld af energi under opgaven.",
-                "Jeg var entusiastisk omkring opgaven.",
-                "Jeg var opslugt af opgaven.",
-              ].map((q, qi) => (
-                <div key={qi} className="rounded-lg border border-zinc-700 bg-zinc-800 p-4 space-y-2">
-                  <p className="text-sm text-zinc-100">{q}</p>
-                  <div className="flex flex-col gap-1">
-                    {[
-                      [0, "Aldrig"],
-                      [1, "Næsten aldrig"],
-                      [2, "Sjældent"],
-                      [3, "Nogle gange"],
-                      [4, "Ofte"],
-                      [5, "Meget ofte"],
-                      [6, "Altid"],
-                    ].map(([val, label]) => (
-                      <button
-                        key={val}
-                        type="button"
-                        onClick={() => {
-                          const next = [...engagement];
-                          next[qi] = val as number;
-                          setEngagement(next);
-                        }}
-                        className={`flex items-center gap-3 px-3 py-2 rounded-lg border text-sm text-left ${
-                          engagement[qi] === val
-                            ? "bg-zinc-700 text-white border-zinc-600"
-                            : "bg-zinc-950 text-zinc-200 border-zinc-700 hover:bg-zinc-800"
-                        }`}
-                      >
-                        <span className="w-4 text-center text-xs text-zinc-400">{val}</span>
-                        <span>{label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-
             <div className="space-y-3 pt-2">
               <p className="text-base font-bold text-zinc-100">Oplevet læring</p>
               <p className="text-xs text-zinc-400">I hvilken grad er du enig i følgende udsagn om, hvad du har lært?</p>
@@ -1302,8 +1255,6 @@ export default function Home() {
               <button
                 className="rounded-lg bg-zinc-700 text-white px-4 py-2 disabled:opacity-40"
                 disabled={
-                  trust.some((v) => v === null) ||
-                  engagement.some((v) => v === null) ||
                   perceivedLearning.some((v) => v === null) ||
                   mentalEffort === null
                 }

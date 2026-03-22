@@ -26,6 +26,9 @@ export async function POST(req: Request) {
       posttestQ3,
       posttestQ4,
       posttestScore,
+      evt1,
+      evt2,
+      evt3,
       dropoutStep,
     } = body as {
       participantId?: string;
@@ -46,6 +49,9 @@ export async function POST(req: Request) {
       posttestQ3?: number | null;
       posttestQ4?: number | null;
       posttestScore?: number | null;
+      evt1?: number | null;
+      evt2?: number | null;
+      evt3?: number | null;
       dropoutStep?: string | null;
     };
 
@@ -75,6 +81,9 @@ export async function POST(req: Request) {
     if (posttestQ3 !== undefined)     data.posttestQ3 = posttestQ3 ?? null;
     if (posttestQ4 !== undefined)     data.posttestQ4 = posttestQ4 ?? null;
     if (posttestScore !== undefined)  data.posttestScore = posttestScore ?? null;
+    if (evt1 !== undefined)           data.evt1 = evt1 ?? null;
+    if (evt2 !== undefined)           data.evt2 = evt2 ?? null;
+    if (evt3 !== undefined)           data.evt3 = evt3 ?? null;
     if (dropoutStep !== undefined)    data.dropoutStep = dropoutStep ?? null;
 
     await prisma.participantLog.upsert({
