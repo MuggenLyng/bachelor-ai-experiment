@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 
 type Step =
   | "consent"
@@ -500,40 +499,19 @@ export default function Home() {
               <h2 className="text-2xl font-bold text-zinc-50 leading-snug">
                 Velkommen til Magnus og Oles bacheloreksperiment!
               </h2>
-              <div style={{ display: "flex", justifyContent: "center" }}>
-                <Image
-                  src="/researchers.jpeg"
-                  alt="Magnus og Ole"
-                  width={300}
-                  height={200}
-                  style={{ borderRadius: "8px" }}
-                />
-              </div>
+
               <p className="text-base text-zinc-200 leading-relaxed">
-              Mange tak fordi du har lyst til at bruge lidt tid på dette eksperiment om GenAI og læring:) Det
-                betyder virkelig meget for os!
+                Mange tak fordi du har lyst til at bruge tid på vores eksperiment:) Det betyder virkelig meget for os!
               </p>
               <div>
-                <p className="text-sm font-semibold text-zinc-100 mb-1">Strukturen af eksperimentet</p>
+                <p className="text-base font-semibold text-zinc-100 mb-1">Strukturen af eksperimentet</p>
                 <p className="text-base text-zinc-200 leading-relaxed">
-                  Eksperimentet undersøger, hvordan generativ AI påvirker læring. Du vil læse en
-                  kort tekst, besvare et par spørgsmål, chatte med en AI-assistent i ca. 5
-                  minutter og til sidst svare på et kort spørgeskema. Det hele tager typisk{" "}
-                  <span className="font-medium text-zinc-100">10-15 minutter</span>.
+                  Vores eksperiment handler fundementalt om, hvordan man lære bedst.{" "}
+                  Eksperimentet tager <span className="font-medium text-zinc-100">15+ minutter</span> og kræver koncentration.
                 </p>
               </div>
-              <div>
-                <p className="text-sm font-semibold text-zinc-100 mb-1">Frivillig follow-up med giveaway!</p>
-                <p className="text-base text-zinc-200 leading-relaxed">
-                  Til sidst får du desuden mulighed for at deltage i et kort follow-up-eksperiment
-                  ca. en uge fra testen.{" "}
-                  <span className="font-medium text-green-300">
-                  10 deltagere trækkes til at vinde 100 kr.
-                  </span>{" "}
-                </p>
-              </div>
-              <p className="text-sm text-zinc-400">
-                Herunder finder du samtykke-erklæringen. Læs den kort igennem, inden du går videre.
+              <p className="text-base font-medium text-green-300">
+                To personer der vælger at være med i follow-up studiet får chancen for at vinde 500 kr.
               </p>
             </div>
 
@@ -811,6 +789,26 @@ export default function Home() {
                       {opt}
                     </label>
                   ))}
+                  <label
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg border cursor-pointer text-sm ${
+                      pretestAnswers[qi] === q.options.length
+                        ? "bg-zinc-700 border-zinc-600 text-white"
+                        : "bg-zinc-950 border-zinc-700 text-zinc-400 hover:bg-zinc-800"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name={`q${qi}`}
+                      className="sr-only"
+                      checked={pretestAnswers[qi] === q.options.length}
+                      onChange={() => {
+                        const next = [...pretestAnswers];
+                        next[qi] = q.options.length;
+                        setPretestAnswers(next);
+                      }}
+                    />
+                    Ved ikke
+                  </label>
                 </div>
               </div>
             ))}
@@ -934,9 +932,9 @@ export default function Home() {
               <p className="text-sm font-semibold text-zinc-100">Vurdering af teksten</p>
               <p className="text-sm text-zinc-300">I hvilken grad passer følgende udsagn på dig?</p>
               {[
-                "At kende indholdet i denne tekst godt vil være nyttigt for mig i fremtiden.",
-                "Det er vigtigt for mig at forstå indholdet i denne tekst godt.",
-                "Jeg kan godt lide indholdet af teksten.",
+                "Teksten vil være nyttigt for mig i fremtiden.",
+                "Det er vigtigt for mig at forstå teksten godt.",
+                "Jeg kan godt lide teksten.",
               ].map((q, qi) => (
                 <div key={qi} className="rounded-lg border border-zinc-700 bg-zinc-800 p-4 space-y-2">
                   <p className="text-sm text-zinc-100">{q}</p>
@@ -1147,6 +1145,26 @@ export default function Home() {
                       {opt}
                     </label>
                   ))}
+                  <label
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg border cursor-pointer text-sm ${
+                      posttestAnswers[qi] === q.options.length
+                        ? "bg-zinc-700 border-zinc-600 text-white"
+                        : "bg-zinc-950 border-zinc-700 text-zinc-400 hover:bg-zinc-800"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name={`postq${qi}`}
+                      className="sr-only"
+                      checked={posttestAnswers[qi] === q.options.length}
+                      onChange={() => {
+                        const next = [...posttestAnswers];
+                        next[qi] = q.options.length;
+                        setPosttestAnswers(next);
+                      }}
+                    />
+                    Ved ikke
+                  </label>
                 </div>
               </div>
             ))}
