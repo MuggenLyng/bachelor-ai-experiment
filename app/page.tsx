@@ -293,9 +293,7 @@ export default function Home() {
   }, 0);
   const posttestValid = posttestAnswers.every((a) => a !== null);
 
-  const freeTextWordCount = freeTextResponse.trim()
-    ? freeTextResponse.trim().split(/\s+/).length
-    : 0;
+  const freeTextCharCount = freeTextResponse.length;
 
   const chatTimerDone = timeLeft === 0;
 
@@ -469,7 +467,6 @@ export default function Home() {
       body: JSON.stringify({
         participantId,
         freeTextResponse,
-        freeTextWordCount,
         perceivedLearning1: perceivedLearning[0],
         perceivedLearning2: perceivedLearning[1],
         perceivedLearning3: perceivedLearning[2],
@@ -506,12 +503,12 @@ export default function Home() {
               <div>
                 <p className="text-base font-semibold text-zinc-100 mb-1">Strukturen af eksperimentet</p>
                 <p className="text-base text-zinc-200 leading-relaxed">
-                  Vores eksperiment handler fundementalt om, hvordan man lære bedst.{" "}
-                  Eksperimentet tager <span className="font-medium text-zinc-100">15+ minutter</span> og kræver koncentration.
+                  Vores eksperiment handler om, hvordan man lærer bedst.{" "}
+                  Eksperimentet tager <span className="font-medium text-zinc-100">ca. 15 minutter</span> og kræver koncentration.
                 </p>
               </div>
               <p className="text-base font-medium text-green-300">
-                To personer der vælger at være med i follow-up studiet får chancen for at vinde 500 kr.
+                Alle, der deltager i follow-up-studiet, er med i lodtrækningen om 2 x 500 kr.
               </p>
             </div>
 
@@ -540,7 +537,7 @@ export default function Home() {
                 <p className="font-medium text-zinc-200">Hvad indebærer deltagelse</p>
                 <ul className="list-disc list-inside space-y-0.5 mt-0.5">
                   <li>Besvare korte spørgsmål om din baggrund (alder, køn, uddannelse)</li>
-                  <li>Besvare en kort pretest</li>
+                  <li>Besvare en kort pre-test — nogle korte indledende spørgsmål om din forhåndsviden før deltagelse</li>
                   <li>Læse en kort informationstekst</li>
                   <li>Besvare et spørgsmål om din forståelsesniveau</li>
                   <li>Chatte med en AI-assistent i ca. 5 minutter</li>
@@ -952,13 +949,7 @@ export default function Home() {
               ))}
             </div>
 
-            <div className="flex justify-between pt-2">
-              <button
-                className="rounded-lg border px-4 py-2 border-zinc-800 text-zinc-100"
-                onClick={() => setStep("read")}
-              >
-                ← Tilbage
-              </button>
+            <div className="flex justify-end pt-2">
               <button
                 className="rounded-lg bg-zinc-700 text-white px-4 py-2 disabled:opacity-40"
                 disabled={!zpdValid}
@@ -1044,13 +1035,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="flex justify-between">
-              <button
-                className="rounded-lg border border-zinc-700 px-4 py-2 text-zinc-100"
-                onClick={() => setStep("zpd")}
-              >
-                ← Tilbage
-              </button>
+            <div className="flex justify-end">
               <div className="flex items-center gap-3">
                 {/* DEV ONLY — fjern inden produktion */}
                 {process.env.NODE_ENV === "development" && (
@@ -1093,13 +1078,13 @@ export default function Home() {
               onChange={(e) => setFreeTextResponse(e.target.value)}
               placeholder="Skriv her..."
             />
-            <p className={`text-xs ${freeTextWordCount >= 50 ? "text-green-400" : "text-zinc-400"}`}>
-              Ord: {freeTextWordCount} / 50
+            <p className={`text-xs ${freeTextCharCount >= 200 ? "text-green-400" : "text-zinc-400"}`}>
+              Tegn: {freeTextCharCount} / 200
             </p>
             <div className="flex justify-end">
               <button
                 className="rounded-lg bg-zinc-700 text-white px-4 py-2 disabled:opacity-40"
-                disabled={freeTextWordCount < 50}
+                disabled={freeTextCharCount < 200}
                 onClick={() => setStep("posttest")}
               >
                 Videre →
