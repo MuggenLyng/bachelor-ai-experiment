@@ -101,8 +101,8 @@ function FollowUpExperiment() {
             <p className="text-base text-zinc-200 leading-relaxed">
               Du vil blive bedt om at forklare emnet fra det første eksperiment med egne ord uden hjælpemidler.
             </p>
-            <p className="text-sm text-zinc-400">
-              Svar så godt du kan, det er helt okay at have glemt detaljer.
+            <p className="text-sm text-green-400 font-medium">
+              Er du klar til at vinde 500 kr... måske?
             </p>
             <div className="flex justify-end pt-2">
               <button
