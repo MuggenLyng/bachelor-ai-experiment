@@ -937,15 +937,11 @@ export default function Home() {
         {step === "zpd" && (
           <section className="bg-zinc-900 rounded-xl border p-5 border-zinc-800 space-y-5">
             <h2 className="text-lg font-semibold text-center">Selvvurdering</h2>
-            <p className="text-sm text-zinc-300">
-              I hvilken grad føler du, at følgende gælder for dig i forhold til det materiale, du
-              lige har læst?
-            </p>
-
+            <p className="text-sm font-semibold text-zinc-100">Tro på egne evner</p>
             <div className="space-y-3">
               {[
                 "Jeg føler, at jeg kan forstå selv de svære dele af materialet.",
-                "Jeg føler, at jeg kan arbejde mig frem til en forståelse af materialet på egen hånd.",
+                "Jeg føler, at jeg kan forstå teksten på egen hånd.",
                 "Jeg føler, at jeg kan håndtere selv de mere komplekse dele af materialet.",
               ].map((q, qi) => (
                 <div key={qi} className="rounded-lg border border-zinc-700 bg-zinc-800 p-4 space-y-2">
@@ -966,7 +962,6 @@ export default function Home() {
 
             <div className="space-y-3 pt-2">
               <p className="text-sm font-semibold text-zinc-100">Vurdering af teksten</p>
-              <p className="text-sm text-zinc-300">I hvilken grad passer følgende udsagn på dig?</p>
               {[
                 "Teksten vil være nyttigt for mig i fremtiden.",
                 "Det er vigtigt for mig at forstå teksten godt.",
@@ -1026,7 +1021,7 @@ export default function Home() {
               </div>
             </div>
             <p className="text-sm text-zinc-400">
-              Stil spørgsmål til teksten du netop har læst. AI'en kan hjælpe dig med at forstå den bedre. Du kan gå videre efter 5 minutter.
+              Chat med AI-assistenten i mindst 5 minutter.
             </p>
             <p className="text-xs text-zinc-500">
               Undlad venligst at skrive personlige eller følsomme oplysninger i chatten.
@@ -1237,7 +1232,6 @@ export default function Home() {
 
             <div className="space-y-3 pt-2">
               <p className="text-base font-bold text-zinc-100">Oplevet læring</p>
-              <p className="text-sm text-zinc-200">I hvilken grad er du enig i følgende udsagn om, hvad du har lært?</p>
               {[
                 "Jeg lærte meget af opgaven.",
                 "Opgaven øgede min viden.",
