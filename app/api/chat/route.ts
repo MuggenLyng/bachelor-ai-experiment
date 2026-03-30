@@ -124,7 +124,7 @@ ${baseText}
       model: "gpt-4o-mini",
       instructions,
       input: messages,
-      max_output_tokens: 300,
+      max_output_tokens: 150,
     });
 
     return NextResponse.json({

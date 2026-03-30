@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
 
 type Step =
   | "consent"
@@ -22,6 +23,7 @@ type Message = {
 };
 
 const CHAT_DURATION = 5 * 60; // 300 sekunder
+const READ_DURATION = 1 * 60; // 60 sekunder
 
 const PRETEST_QUESTIONS = [
   {
@@ -58,12 +60,13 @@ const PRETEST_QUESTIONS = [
     correct: 1,
   },
   {
-    question: "Hvad beskriver basal metabolic rate (BMR) bedst?",
+    question:
+      "Hvad afgør i sidste ende, om en person taber sig, når personen begynder at være mere fysisk aktiv?",
     options: [
-      "Energiforbrug under intens træning",
-      "Energiforbrug i hvile til grundlæggende kropsfunktioner",
-      "Energi kroppen bruger på fordøjelse",
-      "Energi kroppen bruger til muskelopbygning",
+      "Om mere motion altid betyder, at kroppen bruger tilsvarende mere energi",
+      "Om energiindtaget over tid er lavere end det samlede energiforbrug",
+      "Om kroppen stopper med at lagre energi",
+      "Om BMR stiger mere end aktivitetsniveauet",
     ],
     correct: 1,
   },
@@ -149,6 +152,7 @@ export default function Home() {
   // Chat timer
   const chatStartTimeRef = useRef<number | null>(null);
   const [timeLeft, setTimeLeft] = useState(CHAT_DURATION);
+  const [readTimeLeft, setReadTimeLeft] = useState(READ_DURATION);
 
   // Timing refs
   const readStartTimeRef = useRef<number | null>(null);
@@ -263,6 +267,21 @@ export default function Home() {
 
   // Chat timer
   useEffect(() => {
+    if (step !== "read") return;
+
+    if (readStartTimeRef.current === null) {
+      readStartTimeRef.current = Date.now();
+    }
+
+    const interval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - readStartTimeRef.current!) / 1000);
+      setReadTimeLeft(Math.max(0, READ_DURATION - elapsed));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [step]);
+
+  useEffect(() => {
     if (step !== "chat") return;
 
     if (chatStartTimeRef.current === null) {
@@ -295,6 +314,7 @@ export default function Home() {
 
   const freeTextCharCount = freeTextResponse.length;
 
+  const readTimerDone = readTimeLeft === 0;
   const chatTimerDone = timeLeft === 0;
 
   const ageValid = age.trim() !== "" && !isNaN(Number(age)) && Number(age) > 0;
@@ -537,7 +557,7 @@ export default function Home() {
                 <p className="font-medium text-zinc-200">Hvad indebærer deltagelse</p>
                 <ul className="list-disc list-inside space-y-0.5 mt-0.5">
                   <li>Besvare korte spørgsmål om din baggrund (alder, køn, uddannelse)</li>
-                  <li>Besvare en kort pre-test — nogle korte indledende spørgsmål om din forhåndsviden før deltagelse</li>
+                  <li>Besvare en kort pre-test (nogle korte spørgsmål om din forhåndsviden)</li>
                   <li>Læse en kort informationstekst</li>
                   <li>Besvare et spørgsmål om din forståelsesniveau</li>
                   <li>Chatte med en AI-assistent i ca. 5 minutter</li>
@@ -752,7 +772,7 @@ export default function Home() {
         {/* PRETEST */}
         {step === "pretest" && (
           <section className="bg-zinc-900 rounded-xl border p-5 border-zinc-800 space-y-5">
-            <h2 className="text-lg font-semibold text-center">Pretest</h2>
+            <h2 className="text-lg font-semibold text-center">Test om forhåndsviden</h2>
             <p className="text-sm text-zinc-300">
               Besvar disse 4 spørgsmål. Svar/gæt dit bedste :) der er ingen konsekvenser.
             </p>
@@ -835,9 +855,23 @@ export default function Home() {
         {/* READ */}
         {step === "read" && (
           <section className="bg-zinc-900 rounded-xl border p-5 border-zinc-800 space-y-4">
-            <h2 className="text-lg font-semibold text-center">Hvordan bruger kroppen energi?</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-zinc-100">Hvordan bruger kroppen energi?</h2>
+              <div className="flex flex-col items-end gap-1">
+                <span className="text-lg font-semibold text-zinc-100">Tid tilbage</span>
+                <div
+                  className={`text-sm font-mono px-3 py-1 rounded-lg border ${
+                    readTimerDone
+                      ? "border-green-700 bg-green-950 text-green-400"
+                      : "border-zinc-700 bg-zinc-900 text-zinc-300"
+                  }`}
+                >
+                  {readTimerDone ? "Klar til at gå videre" : formatTime(readTimeLeft)}
+                </div>
+              </div>
+            </div>
             <p className="text-sm text-zinc-300">
-              Læs teksten nedenfor grundigt — du får brug for den i næste trin.
+              Læs teksten nedenfor grundigt. Du får brug for den i næste trin.
             </p>
             <div className="rounded-lg bg-zinc-700 p-4 text-sm leading-relaxed text-zinc-200 space-y-3">
               <p>
@@ -879,8 +913,18 @@ export default function Home() {
               >
                 ← Tilbage
               </button>
+              <div className="flex items-center gap-3">
+                {process.env.NODE_ENV === "development" && (
+                  <button
+                    className="text-xs text-zinc-500 underline"
+                    onClick={() => setReadTimeLeft(0)}
+                  >
+                    skip timer (dev)
+                  </button>
+                )}
               <button
-                className="rounded-lg bg-black text-white px-4 py-2"
+                className="rounded-lg bg-zinc-700 text-white px-4 py-2 disabled:opacity-40"
+                disabled={!readTimerDone}
                 onClick={() => {
                   if (readStartTimeRef.current) {
                     readingTimeRef.current = Date.now() - readStartTimeRef.current;
@@ -890,6 +934,7 @@ export default function Home() {
               >
                 Videre →
               </button>
+              </div>
             </div>
           </section>
         )}
@@ -973,14 +1018,17 @@ export default function Home() {
           <section className="space-y-4 rounded-xl border border-zinc-800 bg-zinc-950 p-5">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-zinc-100">Chat</h2>
-              <div
-                className={`text-sm font-mono px-3 py-1 rounded-lg border ${
-                  chatTimerDone
-                    ? "border-green-700 bg-green-950 text-green-400"
-                    : "border-zinc-700 bg-zinc-900 text-zinc-300"
-                }`}
-              >
-                {chatTimerDone ? "Klar til at gå videre" : formatTime(timeLeft)}
+              <div className="flex flex-col items-end gap-1">
+                <span className="text-lg font-semibold text-zinc-100">Tid tilbage</span>
+                <div
+                  className={`text-sm font-mono px-3 py-1 rounded-lg border ${
+                    chatTimerDone
+                      ? "border-green-700 bg-green-950 text-green-400"
+                      : "border-zinc-700 bg-zinc-900 text-zinc-300"
+                  }`}
+                >
+                  {chatTimerDone ? "Klar til at gå videre" : formatTime(timeLeft)}
+                </div>
               </div>
             </div>
             <p className="text-sm text-zinc-400">
@@ -995,13 +1043,13 @@ export default function Home() {
                 {messages.map((m, i) => (
                   <div
                     key={i}
-                    className={`max-w-[78%] px-4 py-2 rounded-2xl text-sm whitespace-pre-wrap leading-relaxed ${
+                    className={`max-w-[78%] px-4 py-2 rounded-2xl text-sm leading-relaxed ${
                       m.role === "user"
                         ? "ml-auto bg-zinc-700 text-white"
-                        : "bg-zinc-800 text-zinc-100"
+                        : "bg-zinc-800 text-zinc-100 prose prose-invert prose-sm max-w-none"
                     }`}
                   >
-                    {m.content}
+                    {m.role === "user" ? m.content : <ReactMarkdown>{m.content}</ReactMarkdown>}
                   </div>
                 ))}
                 {chatLoading && (
@@ -1298,7 +1346,7 @@ export default function Home() {
                 </p>
                 <p className="text-xs text-zinc-400 mt-0.5">
                   Vi trækker lod blandt de deltagere, der gennemfører follow-up testen. Skriv din
-                  email nedenfor — du modtager en mail om ca. en uge med et link til en kort
+                  email nedenfor. Du modtager en mail om ca. en uge med et link til en kort
                   follow-up test (5 min). Du er først med i lodtrækningen, når du har gennemført
                   den. Din email bruges kun til dette og knyttes ikke til dine øvrige svar.
                 </p>
