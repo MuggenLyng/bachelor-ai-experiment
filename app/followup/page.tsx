@@ -120,10 +120,13 @@ function FollowUpExperiment() {
         {/* FREE TEXT */}
         {step === "freeText" && (
           <section className="bg-zinc-900 rounded-xl border p-5 border-zinc-800 space-y-4">
-            <h2 className="text-lg font-semibold text-center">Forklar med egne ord</h2>
+            <h2 className="text-lg font-semibold text-center">Anvend teksten i et scenarie</h2>
             <p className="text-sm text-zinc-300 leading-relaxed">
-              Forklar med egne ord, hvordan mRNA-vacciner virker. Skriv så meget du kan uden
-               hjælpemidler.
+              Kim begynder at motionere meget mere end før, men oplever, at vægttabet er
+              mindre end forventet.
+            </p>
+            <p className="text-sm text-zinc-300 leading-relaxed">
+              Forklar med egne ord, hvorfor dette kan ske ud fra modellen i teksten, og hvad Kim kunne gøre for at tabe sig yderligere.
             </p>
             <textarea
               className="w-full rounded-lg bg-zinc-800 text-white px-3 py-2 outline-none placeholder:text-zinc-500 resize-none h-44"

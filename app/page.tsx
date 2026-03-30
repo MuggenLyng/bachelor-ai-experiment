@@ -527,7 +527,7 @@ export default function Home() {
                   Eksperimentet tager <span className="font-medium text-zinc-100">ca. 15 minutter</span> og kræver koncentration.
                 </p>
               </div>
-              <p className="text-base font-medium text-green-300">
+              <p className="text-base font-bold text-green-300 text-center">
                 Alle, der deltager i follow-up-studiet, er med i lodtrækningen om 2 x 500 kr.
               </p>
             </div>
@@ -558,12 +558,12 @@ export default function Home() {
                 <ul className="list-disc list-inside space-y-0.5 mt-0.5">
                   <li>Besvare korte spørgsmål om din baggrund (alder, køn, uddannelse)</li>
                   <li>Besvare en kort pre-test (nogle korte spørgsmål om din forhåndsviden)</li>
-                  <li>Læse en kort informationstekst</li>
-                  <li>Besvare et spørgsmål om din forståelsesniveau</li>
+                  <li>Læse en kort informationstekst (mindst 1 minut)</li>
+                  <li>Vurdere din selvtillid og tekstens værdi for dig</li>
                   <li>Chatte med en AI-assistent i ca. 5 minutter</li>
-                  <li>Besvare spørgsmål om din oplevelse</li>
+                  <li>Besvare en post-test</li>
                   <li>Skrive en kort forklaring med egne ord</li>
-                  <li>Besvare spørgsmål om din læring</li>
+                  <li>Besvare spørgsmål om din oplevelse og læring</li>
                   <li>Mulighed for at deltage i follow-up testen!</li>
                 </ul>
               </div>
@@ -701,7 +701,7 @@ export default function Home() {
               <p className="text-sm font-bold text-zinc-100">Alder</p>
               <input
                 type="number"
-                min={10}
+                min={18}
                 max={99}
                 value={age}
                 onChange={(e) => setAge(e.target.value)}
@@ -906,13 +906,7 @@ export default function Home() {
                 og vægttab være mindre, end man umiddelbart skulle tro.
               </p>
             </div>
-            <div className="flex justify-between">
-              <button
-                className="rounded-lg border px-4 py-2 border-zinc-800"
-                onClick={() => setStep("pretest")}
-              >
-                ← Tilbage
-              </button>
+            <div className="flex justify-end">
               <div className="flex items-center gap-3">
                 {process.env.NODE_ENV === "development" && (
                   <button
@@ -1114,11 +1108,11 @@ export default function Home() {
           <section className="bg-zinc-900 rounded-xl border p-5 border-zinc-800 space-y-4">
             <h2 className="text-lg font-semibold text-center">Anvend teksten i et scenarie</h2>
             <p className="text-sm text-zinc-300">
-              En person begynder at motionere meget mere end før, men oplever, at vægttabet er
+              Kim begynder at motionere meget mere end før, men oplever, at vægttabet er
               mindre end forventet.
             </p>
             <p className="text-sm text-zinc-300">
-              Forklar med egne ord, hvorfor dette kan ske ud fra modellen i teksten.
+              Forklar med egne ord, hvorfor dette kan ske ud fra modellen i teksten, og hvad Kim kunne gøre for at tabe sig yderligere.
             </p>
             <textarea
               className="w-full rounded-lg bg-zinc-800 text-white px-3 py-2 outline-none placeholder:text-zinc-500 resize-none h-40"
@@ -1133,7 +1127,14 @@ export default function Home() {
               <button
                 className="rounded-lg bg-zinc-700 text-white px-4 py-2 disabled:opacity-40"
                 disabled={freeTextCharCount < 200}
-                onClick={() => setStep("posttest")}
+                onClick={async () => {
+                  await fetch("/api/log-learning-survey", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ participantId, freeTextResponse }),
+                  });
+                  setStep("posttest");
+                }}
               >
                 Videre →
               </button>
@@ -1232,13 +1233,11 @@ export default function Home() {
         {step === "survey" && (
           <section className="bg-zinc-900 rounded-xl border p-5 border-zinc-800 space-y-5">
             <h2 className="text-lg font-semibold text-center">Afsluttende spørgsmål</h2>
-            <p className="text-sm text-zinc-300">
-              Besvar disse spørgsmål om din oplevelse og indsats.
-            </p>
+
 
             <div className="space-y-3 pt-2">
               <p className="text-base font-bold text-zinc-100">Oplevet læring</p>
-              <p className="text-xs text-zinc-400">I hvilken grad er du enig i følgende udsagn om, hvad du har lært?</p>
+              <p className="text-sm text-zinc-200">I hvilken grad er du enig i følgende udsagn om, hvad du har lært?</p>
               {[
                 "Jeg lærte meget af opgaven.",
                 "Opgaven øgede min viden.",
@@ -1341,8 +1340,8 @@ export default function Home() {
             {/* Giveaway */}
             <div className="rounded-lg border border-zinc-700 bg-zinc-800 p-4 space-y-3">
               <div>
-                <p className="text-sm font-semibold text-green-300">
-                  Vind 100 kr., hvis du tilmelder dig en kort follow-up test om en uge
+                <p className="text-sm font-semibold text-green-300 text-center">
+                  Tag follow-up testen om en uge og vind 500 kr.
                 </p>
                 <p className="text-xs text-zinc-400 mt-0.5">
                   Vi trækker lod blandt de deltagere, der gennemfører follow-up testen. Skriv din
