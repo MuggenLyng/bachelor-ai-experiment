@@ -153,12 +153,12 @@ function FollowUpExperiment() {
             <h2 className="text-2xl font-bold text-zinc-50 text-center">Tusind tak!</h2>
             <p className="text-base text-zinc-200 leading-relaxed">
               Du har nu gennemført follow-up studiet. Dine svar er gemt og bidrager enormt til
-              vores bachelorprojekt og dermed til viden om, hvordan man bedst bruger Generativ AI!
+              vores bachelorprojekt og dermed til viden om, hvordan man lærer bedst med AI!
             </p>
             <p className="text-base text-zinc-200 leading-relaxed">
               Vi trækker lod, og 2 vindere får{" "}
               <span className="font-medium text-green-400">500 kr.</span> hver.
-              Vi kontakter vinderne (måske dig?!) på e-mail inden for de næste dage.
+              Vi kontakter vinderne (måske dig?!) på e-mail i slut maj månede 2026.
             </p>
             <p className="text-sm text-zinc-400">— Ole og Magnus</p>
             <p className="text-sm text-zinc-400 italic">
