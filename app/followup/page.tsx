@@ -101,7 +101,7 @@ function FollowUpExperiment() {
             <p className="text-base text-zinc-200 leading-relaxed">
               Du vil blive bedt om at forklare emnet fra det første eksperiment med egne ord uden hjælpemidler.
             </p>
-            <p className="text-sm text-green-400 font-medium">
+            <p className="text-base text-green-400 font-bold text-center">
               Er du klar til at vinde 500 kr... måske?
             </p>
             <div className="flex justify-end pt-2">
@@ -157,8 +157,8 @@ function FollowUpExperiment() {
             </p>
             <p className="text-base text-zinc-200 leading-relaxed">
               Vi trækker lod, og 2 vindere får{" "}
-              <span className="font-medium text-green-400">500 kr.</span> hver —
-              vi kontakter vinderne (måske dig?!) på e-mail inden for de næste dage.
+              <span className="font-medium text-green-400">500 kr.</span> hver.
+              Vi kontakter vinderne (måske dig?!) på e-mail inden for de næste dage.
             </p>
             <p className="text-sm text-zinc-400">— Ole og Magnus</p>
             <p className="text-sm text-zinc-400 italic">
