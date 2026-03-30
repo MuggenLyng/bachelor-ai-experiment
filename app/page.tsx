@@ -1035,7 +1035,7 @@ export default function Home() {
                 {messages.map((m, i) => (
                   <div
                     key={i}
-                    className={`max-w-[78%] px-4 py-2 rounded-2xl text-sm leading-relaxed ${
+                    className={`w-fit max-w-[78%] px-4 py-2 rounded-2xl text-sm leading-relaxed ${
                       m.role === "user"
                         ? "ml-auto bg-zinc-700 text-white"
                         : "bg-zinc-800 text-zinc-100 prose prose-invert prose-sm max-w-none"
