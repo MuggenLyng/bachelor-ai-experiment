@@ -289,6 +289,11 @@ export default function Home() {
 
     if (chatStartTimeRef.current === null) {
       chatStartTimeRef.current = Date.now();
+      try {
+        const s = localStorage.getItem("experimentState");
+        const state = s ? JSON.parse(s) : {};
+        localStorage.setItem("experimentState", JSON.stringify({ ...state, chatStartTime: chatStartTimeRef.current }));
+      } catch {}
     }
 
     const interval = setInterval(() => {
