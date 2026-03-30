@@ -40,9 +40,7 @@ function FollowUpExperiment() {
     } catch {}
   }, [step, freeText, token]);
 
-  const freeTextWordCount = freeText.trim()
-    ? freeText.trim().split(/\s+/).length
-    : 0;
+  const freeTextCharCount = freeText.length;
 
   const handleSubmit = async () => {
     setSubmitting(true);
@@ -52,7 +50,7 @@ function FollowUpExperiment() {
       body: JSON.stringify({
         token,
         followUpFreeText: freeText,
-        followUpFreeTextWordCount: freeTextWordCount,
+        followUpFreeTextWordCount: freeTextCharCount,
         followUpDeviceType,
       }),
     });
@@ -135,12 +133,12 @@ function FollowUpExperiment() {
               placeholder="Skriv her..."
             />
             <p className="text-xs text-zinc-400">
-              Ord: {freeTextWordCount} (skriv minimum 50 ord)
+              Tegn: {freeTextCharCount} / 250
             </p>
             <div className="flex justify-end">
               <button
                 className="rounded-lg bg-zinc-700 text-white px-4 py-2 disabled:opacity-40"
-                disabled={freeTextWordCount < 50 || submitting}
+                disabled={freeTextCharCount < 250 || submitting}
                 onClick={handleSubmit}
               >
                 {submitting ? "Gemmer..." : "Afslut →"}
@@ -158,8 +156,8 @@ function FollowUpExperiment() {
               vores bachelorprojekt og dermed til viden om, hvordan man bedst bruger Generativ AI!
             </p>
             <p className="text-base text-zinc-200 leading-relaxed">
-              Vi trækker lod, og 10 vindere får{" "}
-              <span className="font-medium text-green-400">100 kr.</span> hver —
+              Vi trækker lod, og 2 vindere får{" "}
+              <span className="font-medium text-green-400">500 kr.</span> hver —
               vi kontakter vinderne (måske dig?!) på e-mail inden for de næste dage.
             </p>
             <p className="text-sm text-zinc-400">— Ole og Magnus</p>
