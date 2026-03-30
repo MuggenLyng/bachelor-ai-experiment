@@ -1260,7 +1260,7 @@ export default function Home() {
             <div className="space-y-3 pt-2">
               <p className="text-base font-bold text-zinc-100">Oplevelse</p>
               {[
-                "Jeg lærte meget af opgaven.",
+                "Jeg lærte meget af at chatte med chatbotten.",
                 "Det var en nem samtale med chatbotten.",
                 "Chatbotten tilpassede sig mine læringsbehov.",
               ].map((q, qi) => (
