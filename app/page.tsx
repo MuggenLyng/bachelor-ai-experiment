@@ -489,8 +489,8 @@ export default function Home() {
         participantId,
         freeTextResponse,
         perceivedLearning1: perceivedLearning[0],
-        perceivedLearning2: perceivedLearning[1],
-        perceivedLearning3: perceivedLearning[2],
+        easeOfConversating1: perceivedLearning[1],
+        adaptingToNeeds1: perceivedLearning[2],
         mentalEffort,
         completed: true,
       }),
@@ -1137,7 +1137,7 @@ export default function Home() {
                   await fetch("/api/log-learning-survey", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ participantId, freeTextResponse }),
+                    body: JSON.stringify({ participantId, freeTextResponse, freeTextWordCount: freeTextCharCount }),
                   });
                   setStep("posttest");
                 }}
@@ -1323,7 +1323,17 @@ export default function Home() {
                     setTimeout(() => setShowSurveyWarning(false), 3000);
                     return;
                   }
-                  await logLearningSurvey();
+                  await fetch("/api/log-learning-survey", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      participantId,
+                      perceivedLearning1: perceivedLearning[0],
+                      easeOfConversating1: perceivedLearning[1],
+                      adaptingToNeeds1: perceivedLearning[2],
+                      mentalEffort,
+                    }),
+                  });
                   setStep("freeText");
                 }}
               >

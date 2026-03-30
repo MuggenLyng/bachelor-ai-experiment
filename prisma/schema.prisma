@@ -56,8 +56,8 @@ model ParticipantLog {
 
   // perceived learning
   perceivedLearning1   Int?
-  perceivedLearning2   Int?
-  perceivedLearning3   Int?
+  easeOfConversating1  Int?
+  adaptingToNeeds1     Int?
 
   // mental effort (Paas, 1-9)
   mentalEffort         Int?

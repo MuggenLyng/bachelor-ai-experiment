@@ -12,8 +12,8 @@ export async function POST(req: Request) {
       freeTextResponse,
       freeTextWordCount,
       perceivedLearning1,
-      perceivedLearning2,
-      perceivedLearning3,
+      easeOfConversating1,
+      adaptingToNeeds1,
       mentalEffort,
       completed,
     } = body as {
@@ -21,8 +21,8 @@ export async function POST(req: Request) {
       freeTextResponse?: string;
       freeTextWordCount?: number;
       perceivedLearning1?: number | null;
-      perceivedLearning2?: number | null;
-      perceivedLearning3?: number | null;
+      easeOfConversating1?: number | null;
+      adaptingToNeeds1?: number | null;
       mentalEffort?: number | null;
       completed?: boolean;
     };
@@ -37,14 +37,14 @@ export async function POST(req: Request) {
     await prisma.participantLog.update({
       where: { participantId },
       data: {
-        freeTextResponse: freeTextResponse ?? null,
-        freeTextWordCount: freeTextWordCount ?? null,
-        perceivedLearning1: perceivedLearning1 ?? null,
-        perceivedLearning2: perceivedLearning2 ?? null,
-        perceivedLearning3: perceivedLearning3 ?? null,
-        mentalEffort: mentalEffort ?? null,
-        completed: completed ?? false,
-      },
+        ...(freeTextResponse !== undefined && { freeTextResponse }),
+        ...(freeTextWordCount !== undefined && { freeTextWordCount }),
+        ...(perceivedLearning1 !== undefined && { perceivedLearning1: perceivedLearning1 ?? null }),
+        ...(easeOfConversating1 !== undefined && { easeOfConversating1: easeOfConversating1 ?? null }),
+        ...(adaptingToNeeds1 !== undefined && { adaptingToNeeds1: adaptingToNeeds1 ?? null }),
+        ...(mentalEffort !== undefined && { mentalEffort: mentalEffort ?? null }),
+        ...(completed !== undefined && { completed }),
+      } as any,
       select: { id: true },
     });
 
