@@ -101,7 +101,7 @@ function FollowUpExperiment() {
               <span className="font-medium text-zinc-100">ca. 3–5 minutter</span>.
             </p>
             <p className="text-base text-zinc-200 leading-relaxed">
-              Du vil blive bedt om at forklare emnet fra det første eksperiment med egne ord uden ingen hjælpemidler.
+              Du vil blive bedt om at forklare emnet fra det første eksperiment med egne ord uden hjælpemidler.
             </p>
             <p className="text-sm text-zinc-400">
               Svar så godt du kan, det er helt okay at have glemt detaljer.
