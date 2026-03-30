@@ -22,7 +22,7 @@ type Message = {
   content: string;
 };
 
-const CHAT_DURATION = 5 * 60; // 300 sekunder
+const CHAT_DURATION = 3.5 * 60; // 210 sekunder
 const READ_DURATION = 1 * 60; // 60 sekunder
 
 const PRETEST_QUESTIONS = [
@@ -50,12 +50,12 @@ const PRETEST_QUESTIONS = [
   },
   {
     question:
-      "Ifølge constrained energy model, hvad kan kroppen gøre, når en person øger sit aktivitetsniveau?",
+      "Hvad er betingelsen for, at kroppen begynder at trække på sine energidepoter?",
     options: [
-      "Øge energiindtaget automatisk",
-      "Reducere energiforbruget i andre biologiske processer",
-      "Forbrænde fedt hurtigere end normalt",
-      "Øge BMR proportionalt med aktiviteten",
+      "At energiindtaget er lig med energiforbruget",
+      "At energiforbruget overstiger energiindtaget",
+      "At man øger sin fysiske aktivitet",
+      "At BMR falder under et bestemt niveau",
     ],
     correct: 1,
   },
@@ -106,11 +106,6 @@ function generateUUID() {
     : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-function formatTime(seconds: number) {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
-}
 
 function loadSavedState(): Record<string, any> | null {
   if (typeof window === "undefined") return null;
@@ -136,7 +131,7 @@ export default function Home() {
   const [education, setEducation] = useState("");
 
   // ZPD / baseline — GSE-3 (3 items, 1–5)
-  const [selfEfficacy, setSelfEfficacy] = useState<(number | null)[]>([null, null, null]);
+  const [selfEfficacy, setSelfEfficacy] = useState<(number | null)[]>([null]);
 
   // Pretest
   const [pretestAnswers, setPretestAnswers] = useState<(number | null)[]>([
@@ -153,6 +148,14 @@ export default function Home() {
   const chatStartTimeRef = useRef<number | null>(null);
   const [timeLeft, setTimeLeft] = useState(CHAT_DURATION);
   const [readTimeLeft, setReadTimeLeft] = useState(READ_DURATION);
+  const [showReadWarning, setShowReadWarning] = useState(false);
+  const [showChatWarning, setShowChatWarning] = useState(false);
+  const [showConsentWarning, setShowConsentWarning] = useState(false);
+  const [showDemographicsWarning, setShowDemographicsWarning] = useState(false);
+  const [showPretestWarning, setShowPretestWarning] = useState(false);
+  const [showZpdWarning, setShowZpdWarning] = useState(false);
+  const [showPosttestWarning, setShowPosttestWarning] = useState(false);
+  const [showSurveyWarning, setShowSurveyWarning] = useState(false);
 
   // Timing refs
   const readStartTimeRef = useRef<number | null>(null);
@@ -319,9 +322,7 @@ export default function Home() {
 
   const ageValid = age.trim() !== "" && !isNaN(Number(age)) && Number(age) > 0;
   const demographicsValid = ageValid && gender !== "" && education !== "";
-  const confidenceScore = selfEfficacy.every((v) => v !== null)
-    ? Math.round(selfEfficacy.reduce<number>((s, v) => s + (v ?? 0), 0) / 3)
-    : null;
+  const confidenceScore = selfEfficacy[0] ?? null;
   const zpdValid = selfEfficacy.every((v) => v !== null) && evt.every((v) => v !== null);
 
   // --- UI helper ---
@@ -560,10 +561,10 @@ export default function Home() {
                   <li>Besvare en kort pre-test (nogle korte spørgsmål om din forhåndsviden)</li>
                   <li>Læse en kort informationstekst (mindst 1 minut)</li>
                   <li>Vurdere din selvtillid og tekstens værdi for dig</li>
-                  <li>Chatte med en AI-assistent i ca. 5 minutter</li>
-                  <li>Besvare en post-test</li>
+                  <li>Chatte med en AI-assistent i mindst 3,5 minutter</li>
+                  <li>Besvare spørgsmål om din oplevede læring og mentale indsats</li>
                   <li>Skrive en kort forklaring med egne ord</li>
-                  <li>Besvare spørgsmål om din oplevelse og læring</li>
+                  <li>Besvare en post-test</li>
                   <li>Mulighed for at deltage i follow-up testen!</li>
                 </ul>
               </div>
@@ -676,11 +677,20 @@ export default function Home() {
                 </span>
               </label>
             </div>
-            <div className="flex justify-end">
+            <div className="flex flex-col items-end gap-2">
+              {showConsentWarning && (
+                <p className="text-sm text-amber-400">Du skal acceptere begge punkter for at gå videre.</p>
+              )}
               <button
-                className="rounded-lg bg-zinc-700 text-white px-4 py-2 disabled:opacity-40"
-                disabled={!consented || !consentedAge}
-                onClick={() => setStep("demographics")}
+                className="rounded-lg bg-zinc-700 text-white px-4 py-2"
+                onClick={() => {
+                  if (!consented || !consentedAge) {
+                    setShowConsentWarning(true);
+                    setTimeout(() => setShowConsentWarning(false), 3000);
+                    return;
+                  }
+                  setStep("demographics");
+                }}
               >
                 Næste →
               </button>
@@ -755,16 +765,25 @@ export default function Home() {
               >
                 ← Tilbage
               </button>
-              <button
-                className="rounded-lg bg-zinc-700 text-white px-4 py-2 disabled:opacity-40"
-                disabled={!demographicsValid}
-                onClick={async () => {
-                  await logDemographics();
-                  setStep("pretest");
-                }}
-              >
-                Videre →
-              </button>
+              <div className="flex flex-col items-end gap-2">
+                {showDemographicsWarning && (
+                  <p className="text-sm text-amber-400">Du skal udfylde alle felter for at gå videre.</p>
+                )}
+                <button
+                  className="rounded-lg bg-zinc-700 text-white px-4 py-2"
+                  onClick={async () => {
+                    if (!demographicsValid) {
+                      setShowDemographicsWarning(true);
+                      setTimeout(() => setShowDemographicsWarning(false), 3000);
+                      return;
+                    }
+                    await logDemographics();
+                    setStep("pretest");
+                  }}
+                >
+                  Videre →
+                </button>
+              </div>
             </div>
           </section>
         )}
@@ -837,17 +856,26 @@ export default function Home() {
               >
                 ← Tilbage
               </button>
-              <button
-                className="rounded-lg bg-zinc-700 text-white px-4 py-2 disabled:opacity-40"
-                disabled={pretestAnswers.some((a) => a === null)}
-                onClick={async () => {
-                  await logPretest();
-                  readStartTimeRef.current = Date.now();
-                  setStep("read");
-                }}
-              >
-                Videre →
-              </button>
+              <div className="flex flex-col items-end gap-2">
+                {showPretestWarning && (
+                  <p className="text-sm text-amber-400">Du skal besvare alle spørgsmål for at gå videre.</p>
+                )}
+                <button
+                  className="rounded-lg bg-zinc-700 text-white px-4 py-2"
+                  onClick={async () => {
+                    if (pretestAnswers.some((a) => a === null)) {
+                      setShowPretestWarning(true);
+                      setTimeout(() => setShowPretestWarning(false), 3000);
+                      return;
+                    }
+                    await logPretest();
+                    readStartTimeRef.current = Date.now();
+                    setStep("read");
+                  }}
+                >
+                  Videre →
+                </button>
+              </div>
             </div>
           </section>
         )}
@@ -855,23 +883,9 @@ export default function Home() {
         {/* READ */}
         {step === "read" && (
           <section className="bg-zinc-900 rounded-xl border p-5 border-zinc-800 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-zinc-100">Hvordan bruger kroppen energi?</h2>
-              <div className="flex flex-col items-end gap-1">
-                <span className="text-lg font-semibold text-zinc-100">Tid tilbage</span>
-                <div
-                  className={`text-sm font-mono px-3 py-1 rounded-lg border ${
-                    readTimerDone
-                      ? "border-green-700 bg-green-950 text-green-400"
-                      : "border-zinc-700 bg-zinc-900 text-zinc-300"
-                  }`}
-                >
-                  {readTimerDone ? "Klar til at gå videre" : formatTime(readTimeLeft)}
-                </div>
-              </div>
-            </div>
+            <h2 className="text-lg font-semibold text-zinc-100">Hvordan bruger kroppen energi?</h2>
             <p className="text-sm text-zinc-300">
-              Læs teksten nedenfor grundigt. Du får brug for den i næste trin.
+              Læs teksten grundigt. Du skal bruge mindst 1 minut på denne side.
             </p>
             <div className="rounded-lg bg-zinc-700 p-4 text-sm leading-relaxed text-zinc-200 space-y-3">
               <p>
@@ -906,7 +920,10 @@ export default function Home() {
                 og vægttab være mindre, end man umiddelbart skulle tro.
               </p>
             </div>
-            <div className="flex justify-end">
+            <div className="flex flex-col items-end gap-2">
+              {showReadWarning && (
+                <p className="text-sm text-amber-400">Du skal læse teksten i mindst 1 minut.</p>
+              )}
               <div className="flex items-center gap-3">
                 {process.env.NODE_ENV === "development" && (
                   <button
@@ -916,18 +933,24 @@ export default function Home() {
                     skip timer (dev)
                   </button>
                 )}
-              <button
-                className="rounded-lg bg-zinc-700 text-white px-4 py-2 disabled:opacity-40"
-                disabled={!readTimerDone}
-                onClick={() => {
-                  if (readStartTimeRef.current) {
-                    readingTimeRef.current = Date.now() - readStartTimeRef.current;
-                  }
-                  setStep("zpd");
-                }}
-              >
-                Videre →
-              </button>
+                <button
+                  className={`rounded-lg px-4 py-2 bg-zinc-700 transition-colors ${
+                    readTimerDone ? "text-green-400" : "text-white"
+                  }`}
+                  onClick={() => {
+                    if (!readTimerDone) {
+                      setShowReadWarning(true);
+                      setTimeout(() => setShowReadWarning(false), 3000);
+                      return;
+                    }
+                    if (readStartTimeRef.current) {
+                      readingTimeRef.current = Date.now() - readStartTimeRef.current;
+                    }
+                    setStep("zpd");
+                  }}
+                >
+                  Videre →
+                </button>
               </div>
             </div>
           </section>
@@ -939,25 +962,15 @@ export default function Home() {
             <h2 className="text-lg font-semibold text-center">Selvvurdering</h2>
             <p className="text-sm font-semibold text-zinc-100">Tro på egne evner</p>
             <div className="space-y-3">
-              {[
-                "Jeg føler, at jeg kan forstå selv de svære dele af materialet.",
-                "Jeg føler, at jeg kan forstå teksten på egen hånd.",
-                "Jeg føler, at jeg kan håndtere selv de mere komplekse dele af materialet.",
-              ].map((q, qi) => (
-                <div key={qi} className="rounded-lg border border-zinc-700 bg-zinc-800 p-4 space-y-2">
-                  <p className="text-sm text-zinc-100">{q}</p>
-                  <div className="flex gap-2 flex-wrap">
-                    {[1, 2, 3, 4, 5].map((n) =>
-                      likertBtn(n, selfEfficacy[qi], (val) => {
-                        const next = [...selfEfficacy];
-                        next[qi] = val;
-                        setSelfEfficacy(next);
-                      })
-                    )}
-                  </div>
-                  <p className="text-xs text-zinc-400">1 = Passer slet ikke · 5 = Passer fuldstændigt</p>
+              <div className="rounded-lg border border-zinc-700 bg-zinc-800 p-4 space-y-2">
+                <p className="text-sm text-zinc-100">Jeg føler, at jeg kan forstå selv de svære dele af materialet.</p>
+                <div className="flex gap-2 flex-wrap">
+                  {[1, 2, 3, 4, 5].map((n) =>
+                    likertBtn(n, selfEfficacy[0], (val) => setSelfEfficacy([val]))
+                  )}
                 </div>
-              ))}
+                <p className="text-xs text-zinc-400">1 = Passer slet ikke · 5 = Passer fuldstændigt</p>
+              </div>
             </div>
 
             <div className="space-y-3 pt-2">
@@ -983,11 +996,18 @@ export default function Home() {
               ))}
             </div>
 
-            <div className="flex justify-end pt-2">
+            <div className="flex flex-col items-end gap-2 pt-2">
+              {showZpdWarning && (
+                <p className="text-sm text-amber-400">Du skal besvare alle spørgsmål for at gå videre.</p>
+              )}
               <button
-                className="rounded-lg bg-zinc-700 text-white px-4 py-2 disabled:opacity-40"
-                disabled={!zpdValid}
+                className="rounded-lg bg-zinc-700 text-white px-4 py-2"
                 onClick={async () => {
+                  if (!zpdValid) {
+                    setShowZpdWarning(true);
+                    setTimeout(() => setShowZpdWarning(false), 3000);
+                    return;
+                  }
                   await logZPD();
                   setMessages([{
                     role: "assistant",
@@ -1005,26 +1025,9 @@ export default function Home() {
         {/* CHAT */}
         {step === "chat" && (
           <section className="space-y-4 rounded-xl border border-zinc-800 bg-zinc-950 p-5">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-zinc-100">Chat</h2>
-              <div className="flex flex-col items-end gap-1">
-                <span className="text-lg font-semibold text-zinc-100">Tid tilbage</span>
-                <div
-                  className={`text-sm font-mono px-3 py-1 rounded-lg border ${
-                    chatTimerDone
-                      ? "border-green-700 bg-green-950 text-green-400"
-                      : "border-zinc-700 bg-zinc-900 text-zinc-300"
-                  }`}
-                >
-                  {chatTimerDone ? "Klar til at gå videre" : formatTime(timeLeft)}
-                </div>
-              </div>
-            </div>
+            <h2 className="text-lg font-semibold text-zinc-100">Chat</h2>
             <p className="text-sm text-zinc-400">
-              Chat med AI-assistenten i mindst 5 minutter.
-            </p>
-            <p className="text-xs text-zinc-500">
-              Undlad venligst at skrive personlige eller følsomme oplysninger i chatten.
+              Chat med AI-assistenten i mindst 3,5 minutter.
             </p>
 
             <div className="flex flex-col h-[55vh] rounded-xl border border-zinc-800 overflow-hidden">
@@ -1072,9 +1075,11 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="flex justify-end">
+            <div className="flex flex-col items-end gap-2">
+              {showChatWarning && (
+                <p className="text-sm text-amber-400">Du skal have chattet i mindst 3,5 minutter.</p>
+              )}
               <div className="flex items-center gap-3">
-                {/* DEV ONLY — fjern inden produktion */}
                 {process.env.NODE_ENV === "development" && (
                   <button
                     className="text-xs text-zinc-500 underline"
@@ -1084,11 +1089,17 @@ export default function Home() {
                   </button>
                 )}
                 <button
-                  className="rounded-lg bg-zinc-700 text-white px-4 py-2 disabled:opacity-40"
-                  disabled={!chatTimerDone}
+                  className={`rounded-lg px-4 py-2 bg-zinc-700 transition-colors ${
+                    chatTimerDone ? "text-green-400" : "text-white"
+                  }`}
                   onClick={async () => {
+                    if (!chatTimerDone) {
+                      setShowChatWarning(true);
+                      setTimeout(() => setShowChatWarning(false), 3000);
+                      return;
+                    }
                     await logChat();
-                    setStep("freeText");
+                    setStep("survey");
                   }}
                 >
                   Færdig med chat →
@@ -1115,13 +1126,13 @@ export default function Home() {
               onChange={(e) => setFreeTextResponse(e.target.value)}
               placeholder="Skriv her..."
             />
-            <p className={`text-xs ${freeTextCharCount >= 200 ? "text-green-400" : "text-zinc-400"}`}>
-              Tegn: {freeTextCharCount} / 200
+            <p className={`text-xs ${freeTextCharCount >= 250 ? "text-green-400" : "text-zinc-400"}`}>
+              Tegn: {freeTextCharCount} / 250
             </p>
             <div className="flex justify-end">
               <button
                 className="rounded-lg bg-zinc-700 text-white px-4 py-2 disabled:opacity-40"
-                disabled={freeTextCharCount < 200}
+                disabled={freeTextCharCount < 250}
                 onClick={async () => {
                   await fetch("/api/log-learning-survey", {
                     method: "POST",
@@ -1205,21 +1216,32 @@ export default function Home() {
               >
                 ← Tilbage
               </button>
-              <button
-                className="rounded-lg bg-zinc-700 text-white px-4 py-2 disabled:opacity-40"
-                disabled={!posttestValid}
-                onClick={async () => {
-                  try {
-                    await logPosttest();
+              <div className="flex flex-col items-end gap-2">
+                {showPosttestWarning && (
+                  <p className="text-sm text-amber-400">Du skal besvare alle spørgsmål for at gå videre.</p>
+                )}
+                <button
+                  className="rounded-lg bg-zinc-700 text-white px-4 py-2"
+                  onClick={async () => {
+                    if (!posttestValid) {
+                      setShowPosttestWarning(true);
+                      setTimeout(() => setShowPosttestWarning(false), 3000);
+                      return;
+                    }
+                    try {
+                      await logPosttest();
+                    await logChatSurvey();
+                    await logLearningSurvey();
                   } catch (e: any) {
                     alert("Fejl ved gemning af svar: " + (e?.message ?? "ukendt fejl") + "\n\nTjek konsollen for detaljer.");
                     return;
                   }
-                  setStep("survey");
-                }}
-              >
-                Videre →
-              </button>
+                    setStep("done");
+                  }}
+                >
+                  Videre →
+                </button>
+              </div>
             </div>
           </section>
         )}
@@ -1231,11 +1253,11 @@ export default function Home() {
 
 
             <div className="space-y-3 pt-2">
-              <p className="text-base font-bold text-zinc-100">Oplevet læring</p>
+              <p className="text-base font-bold text-zinc-100">Oplevelse</p>
               {[
                 "Jeg lærte meget af opgaven.",
-                "Opgaven øgede min viden.",
-                "Jeg lærte nye ting gennem opgaven.",
+                "Det var en nem samtale med chatbotten.",
+                "Chatbotten tilpassede sig mine læringsbehov.",
               ].map((q, qi) => (
                 <div key={qi} className="rounded-lg border border-zinc-700 bg-zinc-800 p-4 space-y-2">
                   <p className="text-sm text-zinc-100">{q}</p>
@@ -1257,7 +1279,7 @@ export default function Home() {
               <p className="text-base font-bold text-zinc-100">Mental indsats</p>
               <div className="rounded-lg border border-zinc-700 bg-zinc-800 p-4 space-y-2">
                 <p className="text-sm text-zinc-100">
-                  I arbejdet med den foregående opgave investerede jeg:
+                  I den foregående samtale med chatbotten investerede jeg:
                 </p>
                 <div className="flex flex-col gap-1">
                   {[
@@ -1289,26 +1311,23 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="flex justify-between pt-2">
+            <div className="flex flex-col items-end gap-2 pt-2">
+              {showSurveyWarning && (
+                <p className="text-sm text-amber-400">Du skal besvare alle spørgsmål for at gå videre.</p>
+              )}
               <button
-                className="rounded-lg border px-4 py-2 border-zinc-800 text-zinc-100"
-                onClick={() => setStep("posttest")}
-              >
-                ← Tilbage
-              </button>
-              <button
-                className="rounded-lg bg-zinc-700 text-white px-4 py-2 disabled:opacity-40"
-                disabled={
-                  perceivedLearning.some((v) => v === null) ||
-                  mentalEffort === null
-                }
+                className="rounded-lg bg-zinc-700 text-white px-4 py-2"
                 onClick={async () => {
-                  await logChatSurvey();
+                  if (perceivedLearning.some((v) => v === null) || mentalEffort === null) {
+                    setShowSurveyWarning(true);
+                    setTimeout(() => setShowSurveyWarning(false), 3000);
+                    return;
+                  }
                   await logLearningSurvey();
-                  setStep("done");
+                  setStep("freeText");
                 }}
               >
-                Afslut →
+                Videre →
               </button>
             </div>
           </section>
