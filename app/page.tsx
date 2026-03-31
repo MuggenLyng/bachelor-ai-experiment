@@ -149,6 +149,7 @@ export default function Home() {
   const [timeLeft, setTimeLeft] = useState(CHAT_DURATION);
   const [readTimeLeft, setReadTimeLeft] = useState(READ_DURATION);
   const [showReadWarning, setShowReadWarning] = useState(false);
+  const [consentOpen, setConsentOpen] = useState(false);
   const [showChatWarning, setShowChatWarning] = useState(false);
   const [showConsentWarning, setShowConsentWarning] = useState(false);
   const [showDemographicsWarning, setShowDemographicsWarning] = useState(false);
@@ -283,6 +284,19 @@ export default function Home() {
 
     return () => clearInterval(interval);
   }, [step]);
+
+  // Track dropout: send current step when user leaves the page
+  useEffect(() => {
+    if (!participantId || !group || step === "done") return;
+    const handleHide = () => {
+      navigator.sendBeacon(
+        "/api/log",
+        new Blob([JSON.stringify({ participantId, group, dropoutStep: step })], { type: "application/json" })
+      );
+    };
+    document.addEventListener("visibilitychange", handleHide);
+    return () => document.removeEventListener("visibilitychange", handleHide);
+  }, [step, participantId, group]);
 
   useEffect(() => {
     if (step !== "chat") return;
@@ -524,7 +538,7 @@ export default function Home() {
               </h2>
 
               <p className="text-base text-zinc-200 leading-relaxed">
-                Mange tak fordi du har lyst til at bruge tid på vores eksperiment:) Det betyder virkelig meget for os!
+                Mange tak fordi du har lyst til at bruge tid på vores Psykologi eksperiment:) Det betyder virkelig meget for os!
               </p>
               <div>
                 <p className="text-base font-semibold text-zinc-100 mb-1">Strukturen af eksperimentet</p>
@@ -540,11 +554,14 @@ export default function Home() {
 
             {/* Nested GDPR box */}
             <div className="rounded-lg border border-zinc-700 bg-zinc-800 text-xs text-zinc-300 leading-relaxed overflow-hidden">
-            <div className="overflow-y-auto max-h-72 p-4 space-y-3">
-              <p className="font-semibold text-zinc-100 text-sm">
-                Samtykke til deltagelse i forskningsstudie
-              </p>
-
+              <button
+                className="w-full flex justify-between items-center px-4 py-3 text-zinc-200 hover:bg-zinc-700 transition-colors"
+                onClick={() => setConsentOpen(v => !v)}
+              >
+                <span className="font-semibold text-sm">Samtykke til deltagelse i forskningsstudie</span>
+                <span>{consentOpen ? "▲" : "▼"}</span>
+              </button>
+            {consentOpen && <div className="overflow-y-auto max-h-72 p-4 pt-0 space-y-3">
               <p>
                 Du inviteres til at deltage i et kort forskningsstudie om læring og brug af
                 AI-baserede chatbots. Studiet udføres som en del af et bachelorprojekt ved
@@ -656,7 +673,7 @@ export default function Home() {
                 <p className="font-medium text-zinc-200">Kontakt</p>
                 <p>Magnus Lyng: lyngmagnus@gmail.com <br /> Ole Thomassen: ole-thomassen@hotmail.com</p>
               </div>
-            </div>
+            </div>}
             </div>
 
             <div className="space-y-2 pt-1">
