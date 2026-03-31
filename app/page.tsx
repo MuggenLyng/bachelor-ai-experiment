@@ -287,7 +287,7 @@ export default function Home() {
 
   // Track dropout: send current step when user leaves the page
   useEffect(() => {
-    if (!participantId || !group || step === "done") return;
+    if (!participantId || !group || step === "done" || step === "consent" || step === "demographics") return;
     const handleHide = () => {
       navigator.sendBeacon(
         "/api/log",
@@ -534,7 +534,7 @@ export default function Home() {
             {/* Welcome header */}
             <div className="space-y-3">
               <h2 className="text-2xl font-bold text-zinc-50 leading-snug">
-                Velkommen til Magnus og Oles bacheloreksperiment!
+              Velkommen til Magnus' og Oles psykologi-bacheloreksperiment!
               </h2>
 
               <p className="text-base text-zinc-200 leading-relaxed">
