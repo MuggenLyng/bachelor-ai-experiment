@@ -27,10 +27,10 @@ function StatRow({ cmp }: { cmp: CmpStat }) {
   const sig = cmp.p < 0.05;
   const pStr = cmp.p < 0.001 ? "< .001" : cmp.p.toFixed(3).replace("0.", ".");
   const dAbs = Math.abs(cmp.d);
-  const mag = dAbs >= 0.8 ? "stor" : dAbs >= 0.5 ? "middel" : dAbs >= 0.2 ? "lille" : "triviel";
+  const mag = dAbs >= 0.8 ? "stor" : dAbs >= 0.4 ? "moderat" : dAbs >= 0.35 ? "lille-moderat" : dAbs >= 0.2 ? "lille" : "triviel";
   return (
     <div className="flex gap-3 text-xs mt-1 flex-wrap">
-      <span className={sig ? "text-emerald-400 font-semibold" : "text-zinc-500"}>
+      <span className="text-zinc-400">
         p = {pStr}{sig ? " *" : ""}
       </span>
       <span className="text-zinc-500">t = {cmp.t.toFixed(2)}</span>
@@ -372,7 +372,6 @@ export default function Dashboard() {
               <span><span className="inline-block w-2 h-2 rounded-sm bg-zinc-500 mr-1" />Control: pre {fmt(ctrl.pretestMean)} → post {fmt(ctrl.posttestMean)}</span>
               <span><span className="inline-block w-2 h-2 rounded-sm bg-blue-500 mr-1" />Intervention: pre {fmt(intr.pretestMean)} → post {fmt(intr.posttestMean)}</span>
             </div>
-            <StatRow cmp={cmp?.posttest} />
           </div>
 
           <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
