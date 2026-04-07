@@ -169,11 +169,35 @@ export async function GET() {
 
     const nFollowUp = completed.filter((r) => r.followUpCompleted).length;
 
+    // ── Device type × learning gain ──────────────────────────────────────────
+    const deviceGain: Record<string, { gains: number[]; n: number; mean: number | null }> = {};
+    for (const r of completed) {
+      const dt = (r.deviceType ?? "unknown").toLowerCase();
+      if (r.pretestScore !== null && r.posttestScore !== null) {
+        if (!deviceGain[dt]) deviceGain[dt] = { gains: [], n: 0, mean: null };
+        deviceGain[dt].gains.push(r.posttestScore - r.pretestScore);
+      }
+      if (!deviceGain[dt]) deviceGain[dt] = { gains: [], n: 0, mean: null };
+      deviceGain[dt].n++;
+    }
+    for (const dt of Object.keys(deviceGain)) {
+      const g = deviceGain[dt].gains;
+      deviceGain[dt].mean = g.length ? +(g.reduce((a, b) => a + b, 0) / g.length).toFixed(3) : null;
+    }
+
+    // Welch t-test: mobile vs desktop (if both present)
+    const mobileGains  = nn(completed.filter(r => (r.deviceType ?? "").toLowerCase() === "mobile").map(r =>
+      r.pretestScore !== null && r.posttestScore !== null ? r.posttestScore - r.pretestScore : null));
+    const desktopGains = nn(completed.filter(r => (r.deviceType ?? "").toLowerCase() === "desktop").map(r =>
+      r.pretestScore !== null && r.posttestScore !== null ? r.posttestScore - r.pretestScore : null));
+    const deviceComparison = welchTest(mobileGains, desktopGains);
+
     return NextResponse.json({
       nTotal: all.length, nCompleted: completed.length, nDropouts: dropouts.length,
       nFollowUp,
       dropoutByStep, groupStats, comparisons,
       demographics: { ageMean, genderCounts, eduCounts },
+      deviceGain, deviceComparison,
       lastUpdated: new Date().toISOString(),
     });
   } catch (err: any) {

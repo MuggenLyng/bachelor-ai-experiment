@@ -292,7 +292,7 @@ export default function Dashboard() {
   if (loading) return <div className="p-10 text-zinc-400">Henter data...</div>;
   if (!data) return <div className="p-10 text-red-400">Fejl ved hentning af data.</div>;
 
-  const { nTotal, nCompleted, nDropouts, nFollowUp, groupStats, comparisons: cmp, demographics, lastUpdated } = data;
+  const { nTotal, nCompleted, nDropouts, nFollowUp, groupStats, comparisons: cmp, demographics, deviceGain, deviceComparison, lastUpdated } = data;
   const ctrl = groupStats.control;
   const intr = groupStats.intervention;
 
@@ -450,6 +450,26 @@ export default function Dashboard() {
           <DistChart ctrl={ctrl.chatDurationMin} intr={intr.chatDurationMin} label="Chat varighed (minutter)" refLine={3.5} refLabel="Min. 3.5 min" xLabel="Minutter" stats={cmp?.chatDuration} />
           <DistChart ctrl={ctrl.freeTextChars} intr={intr.freeTextChars} label="Tegn skrevet (fritekst)" refLine={250} refLabel="Min. 250" xLabel="Tegn" stats={cmp?.freeText} />
           <DistChart ctrl={ctrl.chatMessages} intr={intr.chatMessages} label="Antal chat-beskeder per deltager" xLabel="Beskeder" stats={cmp?.chatMessages} />
+        </div>
+
+        {/* Device type × learning gain */}
+        <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4 space-y-3">
+          <p className="text-xs text-zinc-400">Enhedstype × learning gain</p>
+          <div className="flex flex-wrap gap-3">
+            {Object.entries(deviceGain ?? {}).sort((a, b) => b[1].n - a[1].n).map(([dt, s]: [string, any]) => (
+              <div key={dt} className="bg-zinc-800 rounded-lg px-3 py-2 min-w-[100px]">
+                <p className="text-xs text-zinc-500 capitalize">{dt}</p>
+                <p className="text-lg font-bold text-zinc-100">{s.mean !== null ? s.mean.toFixed(2) : "—"}</p>
+                <p className="text-xs text-zinc-500">N={s.n}</p>
+              </div>
+            ))}
+          </div>
+          {deviceComparison && (
+            <div className="pt-1">
+              <p className="text-xs text-zinc-500 mb-0.5">Mobile vs. desktop (Welch t-test)</p>
+              <StatRow cmp={deviceComparison} />
+            </div>
+          )}
         </div>
       </Section>
 
