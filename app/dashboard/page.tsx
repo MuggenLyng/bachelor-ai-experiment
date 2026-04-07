@@ -20,6 +20,25 @@ function tooltipFmt(value: any) {
   return typeof value === "number" ? value.toFixed(2) : value;
 }
 
+type CmpStat = { t: number; p: number; d: number } | null;
+
+function StatRow({ cmp }: { cmp: CmpStat }) {
+  if (!cmp) return null;
+  const sig = cmp.p < 0.05;
+  const pStr = cmp.p < 0.001 ? "< .001" : cmp.p.toFixed(3).replace("0.", ".");
+  const dAbs = Math.abs(cmp.d);
+  const mag = dAbs >= 0.8 ? "stor" : dAbs >= 0.5 ? "middel" : dAbs >= 0.2 ? "lille" : "triviel";
+  return (
+    <div className="flex gap-3 text-xs mt-1 flex-wrap">
+      <span className={sig ? "text-emerald-400 font-semibold" : "text-zinc-500"}>
+        p = {pStr}{sig ? " *" : ""}
+      </span>
+      <span className="text-zinc-500">t = {cmp.t.toFixed(2)}</span>
+      <span className="text-zinc-500">d = {cmp.d.toFixed(2)} <span className="text-zinc-600">({mag})</span></span>
+    </div>
+  );
+}
+
 function Stat({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
     <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4 space-y-1">
@@ -67,7 +86,7 @@ function gaussianKDE(vals: number[]) {
     }, 0) / (vals.length * bw);
 }
 
-function DistChart({ ctrl, intr, label, refLine, refLabel, meanLine, combined = false, xLabel = "x" }: {
+function DistChart({ ctrl, intr, label, refLine, refLabel, meanLine, combined = false, xLabel = "x", stats }: {
   ctrl: (number | null)[];
   intr: (number | null)[];
   label: string;
@@ -76,6 +95,7 @@ function DistChart({ ctrl, intr, label, refLine, refLabel, meanLine, combined = 
   meanLine?: number;
   combined?: boolean;
   xLabel?: string;
+  stats?: CmpStat;
 }) {
   const [pinnedDot, setPinnedDot] = useState<{ disp: string; groups: { label: string; color: string }[] } | null>(null);
 
@@ -246,6 +266,7 @@ function DistChart({ ctrl, intr, label, refLine, refLabel, meanLine, combined = 
           </>
         )}
       </div>
+      {stats !== undefined && <StatRow cmp={stats} />}
     </div>
   );
 }
@@ -271,7 +292,7 @@ export default function Dashboard() {
   if (loading) return <div className="p-10 text-zinc-400">Henter data...</div>;
   if (!data) return <div className="p-10 text-red-400">Fejl ved hentning af data.</div>;
 
-  const { nTotal, nCompleted, nDropouts, groupStats, demographics, lastUpdated } = data;
+  const { nTotal, nCompleted, nDropouts, nFollowUp, groupStats, comparisons: cmp, demographics, lastUpdated } = data;
   const ctrl = groupStats.control;
   const intr = groupStats.intervention;
 
@@ -286,10 +307,10 @@ export default function Dashboard() {
   ];
 
   const secondaryData = [
-    { name: "Subj. læring",  Control: ctrl.perceivedLearning1Mean,  Intervention: intr.perceivedLearning1Mean },
-    { name: "Nem samtale",   Control: ctrl.easeOfConversating1Mean, Intervention: intr.easeOfConversating1Mean },
-    { name: "Tilpasning",    Control: ctrl.adaptingToNeeds1Mean,    Intervention: intr.adaptingToNeeds1Mean },
-    { name: "Mental indsats",Control: ctrl.mentalEffortMean,         Intervention: intr.mentalEffortMean },
+    { name: "Subj.",     Control: ctrl.perceivedLearning1Mean,  Intervention: intr.perceivedLearning1Mean },
+    { name: "Samtale",   Control: ctrl.easeOfConversating1Mean, Intervention: intr.easeOfConversating1Mean },
+    { name: "Tilpasn.",  Control: ctrl.adaptingToNeeds1Mean,    Intervention: intr.adaptingToNeeds1Mean },
+    { name: "Mental",    Control: ctrl.mentalEffortMean,         Intervention: intr.mentalEffortMean },
   ];
 
   const genderData = Object.entries(demographics.genderCounts as Record<string, number>).map(
@@ -321,11 +342,12 @@ export default function Dashboard() {
       {/* Deltagere — altid synlig */}
       <section className="space-y-2">
         <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">Deltagere</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           <Stat label="Total besøg" value={nTotal} />
           <Stat label="Fuldførte" value={nCompleted} />
-          <Stat label="Control" value={ctrl.n} />
-          <Stat label="Intervention" value={intr.n} />
+          <Stat label="Control" value={ctrl.n} sub="standard AI" />
+          <Stat label="Intervention" value={intr.n} sub="pæd.-psyk. AI" />
+          <Stat label="Follow-up fuldført" value={nFollowUp ?? "—"} sub={nCompleted ? `${Math.round(((nFollowUp ?? 0) / nCompleted) * 100)}%` : undefined} />
         </div>
         <p className="text-xs text-zinc-500">Dropouts: {nDropouts}</p>
       </section>
@@ -350,6 +372,7 @@ export default function Dashboard() {
               <span><span className="inline-block w-2 h-2 rounded-sm bg-zinc-500 mr-1" />Control: pre {fmt(ctrl.pretestMean)} → post {fmt(ctrl.posttestMean)}</span>
               <span><span className="inline-block w-2 h-2 rounded-sm bg-blue-500 mr-1" />Intervention: pre {fmt(intr.pretestMean)} → post {fmt(intr.posttestMean)}</span>
             </div>
+            <StatRow cmp={cmp?.posttest} />
           </div>
 
           <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
@@ -374,11 +397,27 @@ export default function Dashboard() {
               <span>Intervention: {fmt(intr.gainMean)}</span>
               <span>Δ = {fmt(intr.gainMean !== null && ctrl.gainMean !== null ? intr.gainMean - ctrl.gainMean : null)}</span>
             </div>
+            <StatRow cmp={cmp?.learningGain} />
           </div>
         </div>
 
-        <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-4 text-xs text-zinc-400 italic">
-          Fritekst (transfer/recall) mangler manuel kodning... kommer snart...
+        <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-5 space-y-2">
+          <p className="text-sm font-semibold text-zinc-300">Fritekst (transfer/recall)</p>
+          <p className="text-xs text-zinc-400">Mangler manuel kodning — kommer snart.</p>
+          <div className="flex gap-2 mt-2">
+            <div className="flex-1 bg-zinc-900 rounded-lg border border-zinc-700 p-3 text-center">
+              <p className="text-xs text-zinc-500">Control</p>
+              <p className="text-2xl font-bold text-zinc-600 mt-1">—</p>
+            </div>
+            <div className="flex-1 bg-zinc-900 rounded-lg border border-zinc-700 p-3 text-center">
+              <p className="text-xs text-zinc-500">Intervention</p>
+              <p className="text-2xl font-bold text-zinc-600 mt-1">—</p>
+            </div>
+            <div className="flex-1 bg-zinc-900 rounded-lg border border-zinc-700 p-3 text-center">
+              <p className="text-xs text-zinc-500">p / d</p>
+              <p className="text-2xl font-bold text-zinc-600 mt-1">—</p>
+            </div>
+          </div>
         </div>
       </Section>
 
@@ -396,6 +435,12 @@ export default function Dashboard() {
               <Bar dataKey="Intervention" fill={COLORS.intervention} radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-1 mt-3">
+            <div><p className="text-xs text-zinc-500 mb-0.5">Subj. læring</p><StatRow cmp={cmp?.perceivedLearning} /></div>
+            <div><p className="text-xs text-zinc-500 mb-0.5">Nem samtale</p><StatRow cmp={cmp?.easeOfConversating} /></div>
+            <div><p className="text-xs text-zinc-500 mb-0.5">Tilpasning</p><StatRow cmp={cmp?.adaptingToNeeds} /></div>
+            <div><p className="text-xs text-zinc-500 mb-0.5">Mental indsats</p><StatRow cmp={cmp?.mentalEffort} /></div>
+          </div>
         </div>
       </Section>
 
@@ -403,9 +448,9 @@ export default function Dashboard() {
       <Section title="Adfærd & Tid" defaultOpen={false}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <DistChart ctrl={ctrl.readingTimeSec} intr={intr.readingTimeSec} label="Læsetid (sekunder)" refLine={60} refLabel="Min. 60s" combined xLabel="Sekunder" />
-          <DistChart ctrl={ctrl.chatDurationMin} intr={intr.chatDurationMin} label="Chat varighed (minutter)" refLine={3.5} refLabel="Min. 3.5 min" xLabel="Minutter" />
-          <DistChart ctrl={ctrl.freeTextChars} intr={intr.freeTextChars} label="Tegn skrevet (fritekst)" refLine={250} refLabel="Min. 250" xLabel="Tegn" />
-          <DistChart ctrl={ctrl.chatMessages} intr={intr.chatMessages} label="Antal chat-beskeder per deltager" xLabel="Beskeder" />
+          <DistChart ctrl={ctrl.chatDurationMin} intr={intr.chatDurationMin} label="Chat varighed (minutter)" refLine={3.5} refLabel="Min. 3.5 min" xLabel="Minutter" stats={cmp?.chatDuration} />
+          <DistChart ctrl={ctrl.freeTextChars} intr={intr.freeTextChars} label="Tegn skrevet (fritekst)" refLine={250} refLabel="Min. 250" xLabel="Tegn" stats={cmp?.freeText} />
+          <DistChart ctrl={ctrl.chatMessages} intr={intr.chatMessages} label="Antal chat-beskeder per deltager" xLabel="Beskeder" stats={cmp?.chatMessages} />
         </div>
       </Section>
 
@@ -414,8 +459,9 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <DistChart
             ctrl={ctrl.ageValues} intr={intr.ageValues}
-            label="Aldersfordeling (begge grupper)"
+            label="Aldersfordeling per gruppe (balancetjek)"
             xLabel="Alder"
+            stats={cmp?.age}
           />
           <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4 space-y-2">
             <p className="text-xs text-zinc-400">Køn</p>
