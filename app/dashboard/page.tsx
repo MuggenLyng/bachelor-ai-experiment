@@ -456,7 +456,7 @@ export default function Dashboard() {
         <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4 space-y-3">
           <p className="text-xs text-zinc-400">Enhedstype × learning gain</p>
           <div className="flex flex-wrap gap-3">
-            {Object.entries(deviceGain ?? {}).sort((a, b) => b[1].n - a[1].n).map(([dt, s]: [string, any]) => (
+            {Object.entries(deviceGain ?? {}).sort((a: any, b: any) => b[1].n - a[1].n).map(([dt, s]: [string, any]) => (
               <div key={dt} className="bg-zinc-800 rounded-lg px-3 py-2 min-w-[100px]">
                 <p className="text-xs text-zinc-500 capitalize">{dt}</p>
                 <p className="text-lg font-bold text-zinc-100">{s.mean !== null ? s.mean.toFixed(2) : "—"}</p>
