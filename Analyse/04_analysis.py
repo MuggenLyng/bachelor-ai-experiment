@@ -79,12 +79,12 @@ def run():
 
     # Køn
     gender_ct = pd.crosstab(df["gender"], df["group"])
-    chi2, p_gender, _, _ = stats.chi2_contingency(gender_ct)
+    chi2, p_gender, _, _ = stats.chi2_contingency(gender_ct, correction=False)
     print(f"  Køn (chi²={chi2:.3f}, p={p_gender:.3f}):\n{gender_ct.to_string()}")
 
     # Uddannelse
     edu_ct = pd.crosstab(df["edu_group"], df["group"])
-    chi2_edu, p_edu, _, _ = stats.chi2_contingency(edu_ct)
+    chi2_edu, p_edu, _, _ = stats.chi2_contingency(edu_ct, correction=False)
     print(f"  Uddannelse (chi²={chi2_edu:.3f}, p={p_edu:.3f}):\n{edu_ct.to_string()}")
 
     # Pretest
@@ -122,7 +122,6 @@ def run():
         ("easeOfConversating1", "H4a: Nem samtale"),
         ("adaptingToNeeds1",    "H4b: Tilpasning"),
         ("mentalEffort",        "H5: Mental indsats"),
-        ("evt_mean",            "H6: EVT balance check (bør ikke være sig.)"),
         ("chat_duration_min",   "H7: Chat varighed"),
         ("freeTextWordCount",   "H8: Fritekst tegn"),
     ]:
@@ -155,7 +154,7 @@ def run():
             print(f"    β={slope:.3f}, r={r:.3f}, p={p:.3f}, N={len(sub)}")
 
     # =========================================================
-    # DESKRIPTIV TABEL PR. GRUPPE
+    # DESKRIPTIV TABEL PR. GRUPPE  (med p og Cohen's d)
     # =========================================================
     print("\n--- DESKRIPTIV TABEL PR. GRUPPE ---")
     desc_cols = [
@@ -173,14 +172,21 @@ def run():
         "chat_duration_min": "Chat (min)", "freeTextWordCount": "Fritekst tegn",
         "confidence": "Confidence",
     }
-    print(f"\n  {'Variabel':<20} {'Control (M±SD)':<22} {'Intervention (M±SD)':<22} {'N ctrl'} {'N intr'}")
-    print(f"  {'-'*75}")
+    print(f"\n  {'Variabel':<20} {'Control (M±SD)':<22} {'Intervention (M±SD)':<22} {'N ctrl':<7} {'N intr':<7} {'p':<8} {'d'}")
+    print(f"  {'-'*97}")
     for col in desc_cols:
         c = df[df["group"] == "control"][col].dropna()
         i = df[df["group"] == "intervention"][col].dropna()
-        ctrl_str  = f"{c.mean():.2f} ± {c.std():.2f}"
-        intr_str  = f"{i.mean():.2f} ± {i.std():.2f}"
-        print(f"  {labels.get(col, col):<20} {ctrl_str:<22} {intr_str:<22} {len(c):<7} {len(i)}")
+        ctrl_str = f"{c.mean():.2f} ± {c.std():.2f}"
+        intr_str = f"{i.mean():.2f} ± {i.std():.2f}"
+        if len(c) >= 2 and len(i) >= 2:
+            _, p_val = stats.ttest_ind(i, c, equal_var=False)
+            d_val = cohens_d(i, c)
+            p_str = f"{p_val:.3f}" + (" *" if p_val < 0.05 else "")
+            d_str = f"{d_val:.2f}"
+        else:
+            p_str, d_str = "—", "—"
+        print(f"  {labels.get(col, col):<20} {ctrl_str:<22} {intr_str:<22} {len(c):<7} {len(i):<7} {p_str:<8} {d_str}")
     desc = df.groupby("group")[desc_cols].agg(["mean", "std", "count"]).round(3)
     desc.to_csv("data/processed/descriptives.csv")
 

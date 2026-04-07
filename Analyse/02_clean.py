@@ -27,12 +27,13 @@ def run():
     df["education"] = df["education"].str.strip()
     df["deviceType"] = df["deviceType"].str.strip().str.lower()
 
-    # Uddannelse → grupper
-    gym = ["Gymnasiel (STX, HF, HHX, HTX eller lign.)", "Grundskole"]
-    vgo = ["Professionsbachelor", "Bachelor", "Kandidat", "Ph.d. eller højere"]
+    # Uddannelse → grupper (matcher præcist hvad appen sender)
+    gym = ["Gymnasial uddannelse (STX, HF, HTX, HHX)", "Grundskole"]
+    vgo = ["Professionsbachelor", "Bachelor", "Kandidat", "PhD eller højere"]
     df["edu_group"] = df["education"].apply(
         lambda x: "gymnasiel" if x in gym else ("videregående" if x in vgo else "andet")
     )
+    print(f"  Uddannelsesfordeling:\n{df['edu_group'].value_counts().to_string()}")
 
     # --- Missing values: kun complete cases til primær analyse ---
     required = ["group", "pretestScore", "posttestScore", "age", "gender", "education"]

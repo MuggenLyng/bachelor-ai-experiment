@@ -1,5 +1,5 @@
 ,age,age,age,pretestScore,pretestScore,pretestScore,posttestScore,posttestScore,posttestScore,learning_gain,learning_gain,learning_gain,perceivedLearning1,perceivedLearning1,perceivedLearning1,easeOfConversating1,easeOfConversating1,easeOfConversating1,adaptingToNeeds1,adaptingToNeeds1,adaptingToNeeds1,mentalEffort,mentalEffort,mentalEffort,evt_mean,evt_mean,evt_mean,chat_duration_min,chat_duration_min,chat_duration_min,freeTextWordCount,freeTextWordCount,freeTextWordCount,confidence,confidence,confidence
 ,mean,std,count,mean,std,count,mean,std,count,mean,std,count,mean,std,count,mean,std,count,mean,std,count,mean,std,count,mean,std,count,mean,std,count,mean,std,count,mean,std,count
 group,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-control,41.4,19.057,10,2.4,1.174,10,2.9,1.37,10,0.5,1.269,10,3.8,1.751,10,4.8,1.033,10,4.1,1.663,10,5.1,1.524,10,3.1,0.446,10,5.2,2.096,10,321.2,89.266,10,4.4,0.516,10
-intervention,28.385,9.421,13,2.538,1.127,13,3.308,0.63,13,0.769,1.166,13,3.385,1.557,13,3.615,1.66,13,3.231,1.739,13,5.692,1.437,13,3.026,0.63,13,7.026,4.436,13,289.923,41.343,13,4.231,0.725,13
+control,42.818,18.681,11,2.273,1.191,11,2.818,1.328,11,0.545,1.214,11,3.727,1.679,11,4.545,1.293,11,4.0,1.612,11,5.182,1.471,11,3.03,0.482,11,5.257,1.998,11,314.909,87.217,11,4.364,0.505,11
+intervention,28.143,9.097,14,2.5,1.092,14,3.286,0.611,14,0.786,1.122,14,3.429,1.505,14,3.643,1.598,14,3.286,1.684,14,5.786,1.424,14,2.952,0.665,14,6.775,4.364,14,288.429,40.113,14,4.143,0.77,14
