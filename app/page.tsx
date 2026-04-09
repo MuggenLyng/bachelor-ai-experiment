@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import { T, type Lang } from "@/lib/translations";
 
 type Step =
   | "consent"
@@ -22,58 +23,11 @@ type Message = {
   content: string;
 };
 
-const CHAT_DURATION = 3.5 * 60; // 210 sekunder
-const READ_DURATION = 1 * 60; // 60 sekunder
+const CHAT_DURATION = 3.5 * 60; // 210 seconds
+const READ_DURATION = 1 * 60; // 60 seconds
 
-const PRETEST_QUESTIONS = [
-  {
-    question:
-      "En person træner meget, men taber sig kun lidt. Hvad er den bedste forklaring?",
-    options: [
-      "Kroppen kompenserer ved at spare energi andre steder",
-      "Kroppen tilpasser sig, så den bruger mindre energi til de samme aktiviteter",
-      "Personen har mistet muskelmasse",
-      "Kroppen stopper med at bruge energi",
-    ],
-    correct: 0,
-  },
-  {
-    question:
-      "Hvad udgør typisk den største del af en persons daglige energiforbrug?",
-    options: [
-      "Fysisk aktivitet",
-      "Fordøjelse af mad",
-      "Basal metabolic rate (BMR)",
-      "Hjernens aktivitet",
-    ],
-    correct: 2,
-  },
-  {
-    question:
-      "Hvad er betingelsen for, at kroppen begynder at trække på sine energidepoter?",
-    options: [
-      "At energiindtaget er lig med energiforbruget",
-      "At energiforbruget overstiger energiindtaget",
-      "At man øger sin fysiske aktivitet",
-      "At BMR falder under et bestemt niveau",
-    ],
-    correct: 1,
-  },
-  {
-    question:
-      "Hvad afgør i sidste ende, om en person taber sig, når personen begynder at være mere fysisk aktiv?",
-    options: [
-      "Om mere motion altid betyder, at kroppen bruger tilsvarende mere energi",
-      "Om energiindtaget over tid er lavere end det samlede energiforbrug",
-      "Om kroppen stopper med at lagre energi",
-      "Om BMR stiger mere end aktivitetsniveauet",
-    ],
-    correct: 1,
-  },
-];
-
-function generateShuffledQuestions() {
-  return PRETEST_QUESTIONS.map((q) => {
+function generateShuffledQuestions(lang: Lang) {
+  return T[lang].questions.map((q) => {
     const indices = q.options.map((_, i) => i);
     for (let i = indices.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -81,31 +35,17 @@ function generateShuffledQuestions() {
     }
     return {
       question: q.question,
-      options: indices.map((i) => q.options[i]),
+      options: indices.map((i) => (q.options as readonly string[])[i]),
       correct: indices.indexOf(q.correct),
     };
   });
 }
-
-const EDUCATION_OPTIONS = [
-  "Grundskole",
-  "Gymnasial uddannelse (STX, HF, HTX, HHX)",
-  "Erhvervsuddannelse",
-  "Professionsbachelor",
-  "Bachelor",
-  "Kandidat",
-  "PhD eller højere",
-  "Andet",
-];
-
-const GENDER_OPTIONS = ["Mand", "Kvinde", "Andet"];
 
 function generateUUID() {
   return typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
-
 
 function loadSavedState(): Record<string, any> | null {
   if (typeof window === "undefined") return null;
@@ -118,6 +58,7 @@ function loadSavedState(): Record<string, any> | null {
 }
 
 export default function Home() {
+  const [lang, setLang] = useState<Lang>("da");
   const [step, setStep] = useState<Step>("consent");
   const [consented, setConsented] = useState(false);
   const [consentedAge, setConsentedAge] = useState(false);
@@ -185,14 +126,14 @@ export default function Home() {
   const [posttestAnswers, setPosttestAnswers] = useState<(number | null)[]>([null, null, null, null]);
 
   // Shuffled questions (randomized once per participant)
-  const [shuffledQuestions, setShuffledQuestions] = useState<typeof PRETEST_QUESTIONS>([]);
+  const [shuffledQuestions, setShuffledQuestions] = useState<ReturnType<typeof generateShuffledQuestions>>([]);
 
   // Auto-scroll chat
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, chatLoading]);
 
-  // Randomisering
+  // Randomisation
   useEffect(() => {
     const storedGroup = localStorage.getItem("group") as Group | null;
     const storedId = localStorage.getItem("participantId");
@@ -223,8 +164,48 @@ export default function Home() {
   // Restore state from localStorage on mount (client-side only)
   useEffect(() => {
     const saved = loadSavedState();
+
+    // Restore language first
+    const storedLang = localStorage.getItem("lang") as Lang | null;
+    if (storedLang === "da" || storedLang === "en") {
+      setLang(storedLang);
+      const effectiveLang = storedLang;
+      if (!saved) {
+        setShuffledQuestions(generateShuffledQuestions(effectiveLang));
+        return;
+      }
+      if (saved.step) setStep(saved.step);
+      if (saved.consented) setConsented(saved.consented);
+      if (saved.consentedAge) setConsentedAge(saved.consentedAge);
+      if (saved.age) setAge(saved.age);
+      if (saved.gender) setGender(saved.gender);
+      if (saved.education) setEducation(saved.education);
+      if (saved.selfEfficacy) setSelfEfficacy(saved.selfEfficacy);
+      if (saved.pretestAnswers) setPretestAnswers(saved.pretestAnswers);
+      if (saved.posttestAnswers) setPosttestAnswers(saved.posttestAnswers);
+      if (saved.messages) setMessages(saved.messages);
+      if (saved.chatStartTime) {
+        chatStartTimeRef.current = saved.chatStartTime;
+        const elapsed = Math.floor((Date.now() - saved.chatStartTime) / 1000);
+        setTimeLeft(Math.max(0, CHAT_DURATION - elapsed));
+      }
+      if (saved.evt) setEvt(saved.evt);
+      if (saved.freeTextResponse) setFreeTextResponse(saved.freeTextResponse);
+      if (saved.perceivedLearning) setPerceivedLearning(saved.perceivedLearning);
+      if (saved.mentalEffort != null) setMentalEffort(saved.mentalEffort);
+      if (saved.followUpEmail) setFollowUpEmail(saved.followUpEmail);
+      if (saved.followUpSubmitted) setFollowUpSubmitted(saved.followUpSubmitted);
+      if (saved.shuffledQuestions?.length === T[effectiveLang].questions.length) {
+        setShuffledQuestions(saved.shuffledQuestions);
+      } else {
+        setShuffledQuestions(generateShuffledQuestions(effectiveLang));
+      }
+      return;
+    }
+
+    // No stored lang — use default da
     if (!saved) {
-      setShuffledQuestions(generateShuffledQuestions());
+      setShuffledQuestions(generateShuffledQuestions("da"));
       return;
     }
     if (saved.step) setStep(saved.step);
@@ -248,12 +229,17 @@ export default function Home() {
     if (saved.mentalEffort != null) setMentalEffort(saved.mentalEffort);
     if (saved.followUpEmail) setFollowUpEmail(saved.followUpEmail);
     if (saved.followUpSubmitted) setFollowUpSubmitted(saved.followUpSubmitted);
-    if (saved.shuffledQuestions?.length === PRETEST_QUESTIONS.length) {
+    if (saved.shuffledQuestions?.length === T["da"].questions.length) {
       setShuffledQuestions(saved.shuffledQuestions);
     } else {
-      setShuffledQuestions(generateShuffledQuestions());
+      setShuffledQuestions(generateShuffledQuestions("da"));
     }
   }, []);
+
+  // Persist lang to localStorage on change
+  useEffect(() => {
+    localStorage.setItem("lang", lang);
+  }, [lang]);
 
   // Persist state to localStorage on every relevant change
   useEffect(() => {
@@ -269,7 +255,7 @@ export default function Home() {
       posttestAnswers, messages, freeTextResponse, perceivedLearning,
       mentalEffort, followUpEmail, followUpSubmitted, shuffledQuestions]);
 
-  // Chat timer
+  // Read timer
   useEffect(() => {
     if (step !== "read") return;
 
@@ -291,12 +277,12 @@ export default function Home() {
     const handleHide = () => {
       navigator.sendBeacon(
         "/api/log",
-        new Blob([JSON.stringify({ participantId, group, dropoutStep: step })], { type: "application/json" })
+        new Blob([JSON.stringify({ participantId, group, dropoutStep: step, language: lang })], { type: "application/json" })
       );
     };
     document.addEventListener("visibilitychange", handleHide);
     return () => document.removeEventListener("visibilitychange", handleHide);
-  }, [step, participantId, group]);
+  }, [step, participantId, group, lang]);
 
   useEffect(() => {
     if (step !== "chat") return;
@@ -319,11 +305,11 @@ export default function Home() {
   }, [step]);
 
   if (!group || !participantId) {
-    return <div className="p-10">Loader...</div>;
+    return <div className="p-10">{T[lang].loading}</div>;
   }
 
   // --- Computed ---
-  const activeQuestions = shuffledQuestions.length > 0 ? shuffledQuestions : PRETEST_QUESTIONS;
+  const activeQuestions = shuffledQuestions.length > 0 ? shuffledQuestions : (generateShuffledQuestions(lang));
 
   const pretestScore = pretestAnswers.reduce<number>((score, answer, i) => {
     return score + (answer === activeQuestions[i].correct ? 1 : 0);
@@ -343,6 +329,9 @@ export default function Home() {
   const demographicsValid = ageValid && gender !== "" && education !== "";
   const confidenceScore = selfEfficacy[0] ?? null;
   const zpdValid = selfEfficacy.every((v) => v !== null) && evt.every((v) => v !== null);
+
+  // Shorthand
+  const tr = T[lang];
 
   // --- UI helper ---
   const likertBtn = (
@@ -380,7 +369,7 @@ export default function Home() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: nextMessages, group, confidence: confidenceScore }),
+        body: JSON.stringify({ messages: nextMessages, group, confidence: confidenceScore, language: lang }),
       });
 
       const data = await res.json();
@@ -393,7 +382,7 @@ export default function Home() {
     } catch (e: any) {
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: `Fejl: ${String(e?.message ?? e)}` },
+        { role: "assistant", content: `${tr.chat.errorPrefix}${String(e?.message ?? e)}` },
       ]);
     } finally {
       setChatLoading(false);
@@ -412,6 +401,7 @@ export default function Home() {
         gender,
         education,
         deviceType,
+        language: lang,
       }),
     });
     if (!res.ok) {
@@ -459,7 +449,7 @@ export default function Home() {
     if (!res.ok) {
       const data = await res.json();
       console.error("logPosttest failed:", data.error);
-      throw new Error(data.error ?? "Fejl ved gemning af posttest");
+      throw new Error(data.error ?? tr.posttest.saveError("unknown"));
     }
   };
 
@@ -524,31 +514,64 @@ export default function Home() {
     <main className="min-h-screen flex items-center justify-center p-6">
       <div className="w-full max-w-2xl space-y-6">
         <header>
-          <h1 className="text-2xl font-semibold">Bachelor-eksperiment</h1>
+          <h1 className="text-2xl font-semibold">{tr.appTitle}</h1>
         </header>
 
         {/* CONSENT */}
         {step === "consent" && (
-          
           <section className="bg-zinc-900 rounded-xl border p-6 border-zinc-800 space-y-5">
+
+            {/* Language toggle */}
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setLang("da");
+                  setShuffledQuestions(generateShuffledQuestions("da"));
+                }}
+                className={`px-4 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
+                  lang === "da"
+                    ? "bg-zinc-700 text-white border-zinc-600"
+                    : "bg-zinc-950 text-zinc-300 border-zinc-700 hover:bg-zinc-800"
+                }`}
+              >
+                Dansk
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setLang("en");
+                  setShuffledQuestions(generateShuffledQuestions("en"));
+                }}
+                className={`px-4 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
+                  lang === "en"
+                    ? "bg-zinc-700 text-white border-zinc-600"
+                    : "bg-zinc-950 text-zinc-300 border-zinc-700 hover:bg-zinc-800"
+                }`}
+              >
+                English
+              </button>
+            </div>
+
             {/* Welcome header */}
             <div className="space-y-3">
               <h2 className="text-2xl font-bold text-zinc-50 leading-snug">
-              Velkommen til Magnus' og Oles psykologi-bacheloreksperiment!
+                {tr.consent.title}
               </h2>
 
               <p className="text-base text-zinc-200 leading-relaxed">
-                Mange tak fordi du har lyst til at bruge tid på vores Psykologi eksperiment:) Det betyder virkelig meget for os!
+                {tr.consent.intro}
               </p>
               <div>
-                <p className="text-base font-semibold text-zinc-100 mb-1">Strukturen af eksperimentet</p>
+                <p className="text-base font-semibold text-zinc-100 mb-1">{tr.consent.structureLabel}</p>
                 <p className="text-base text-zinc-200 leading-relaxed">
-                  Vores eksperiment handler om, hvordan man lærer bedst.{" "}
-                  Eksperimentet tager <span className="font-medium text-zinc-100">ca. 15 minutter</span> og kræver koncentration.
+                  {tr.consent.structureText.split(tr.consent.structureHighlight)[0]}
+                  <span className="font-medium text-zinc-100">{tr.consent.structureHighlight}</span>
+                  {tr.consent.structureText.split(tr.consent.structureHighlight)[1]}
                 </p>
               </div>
               <p className="text-base font-bold text-green-300 text-center">
-                Alle, der deltager i follow-up-studiet, er med i lodtrækningen om 2 x 500 kr.
+                {tr.consent.giveawayTeaser}
               </p>
             </div>
 
@@ -558,122 +581,78 @@ export default function Home() {
                 className="w-full flex justify-between items-center px-4 py-3 text-zinc-200 hover:bg-zinc-700 transition-colors"
                 onClick={() => setConsentOpen(v => !v)}
               >
-                <span className="font-semibold text-sm">Samtykke til deltagelse i forskningsstudie</span>
+                <span className="font-semibold text-sm">{tr.consent.gdprToggle}</span>
                 <span>{consentOpen ? "▲" : "▼"}</span>
               </button>
-            {consentOpen && <div className="overflow-y-auto max-h-72 p-4 pt-0 space-y-3">
-              <p>
-                Du inviteres til at deltage i et kort forskningsstudie om læring og brug af
-                AI-baserede chatbots. Studiet udføres som en del af et bachelorprojekt ved
-                Københavns Universitet.
-              </p>
+              {consentOpen && (
+                <div className="overflow-y-auto max-h-72 p-4 pt-0 space-y-3">
+                  <p>{tr.consent.gdpr.intro}</p>
 
-              <div>
-                <p className="font-medium text-zinc-200">Formål</p>
-                <p>
-                  Formålet er at undersøge, hvordan mennesker lærer gennem interaktion med en
-                  AI-baseret chatbot efter at have læst en kort tekst.
-                </p>
-              </div>
+                  <div>
+                    <p className="font-medium text-zinc-200">{tr.consent.gdpr.purposeLabel}</p>
+                    <p>{tr.consent.gdpr.purposeText}</p>
+                  </div>
 
-              <div>
-                <p className="font-medium text-zinc-200">Hvad indebærer deltagelse</p>
-                <ul className="list-disc list-inside space-y-0.5 mt-0.5">
-                  <li>Besvare korte spørgsmål om din baggrund (alder, køn, uddannelse)</li>
-                  <li>Besvare en kort pre-test (nogle korte spørgsmål om din forhåndsviden)</li>
-                  <li>Læse en kort informationstekst (mindst 1 minut)</li>
-                  <li>Vurdere din selvtillid og tekstens værdi for dig</li>
-                  <li>Chatte med en AI-assistent i mindst 3,5 minutter</li>
-                  <li>Besvare spørgsmål om din oplevede læring og mentale indsats</li>
-                  <li>Skrive en kort forklaring med egne ord</li>
-                  <li>Besvare en post-test</li>
-                  <li>Mulighed for at deltage i follow-up testen!</li>
-                </ul>
-              </div>
+                  <div>
+                    <p className="font-medium text-zinc-200">{tr.consent.gdpr.participationLabel}</p>
+                    <ul className="list-disc list-inside space-y-0.5 mt-0.5">
+                      {tr.consent.gdpr.participationItems.map((item, i) => (
+                        <li key={i}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
 
-              <div>
-                <p className="font-medium text-zinc-200">Hvilke data indsamles</p>
-                <ul className="list-disc list-inside space-y-0.5 mt-0.5">
-                  <li>Alder, køn og uddannelsesbaggrund</li>
-                  <li>Svar på quiz og spørgeskemaer</li>
-                  <li>Chatbeskeder mellem dig og AI-assistenten</li>
-                  <li>En kort fritekstbesvarelse</li>
-                  <li>Tekniske interaktionsdata (fx antal beskeder og tidsstempler)</li>
-                </ul>
-                <p className="mt-1">
-                Dine svar gemmes under et pseudonymiseret deltager-ID. 
-                Hvis du angiver en e-mail til follow-up studiet, bruges den kun til at sende 
-                et opfølgningslink og slettes efter follow-up studiet er afsluttet.
-                </p>
-              </div>
+                  <div>
+                    <p className="font-medium text-zinc-200">{tr.consent.gdpr.dataLabel}</p>
+                    <ul className="list-disc list-inside space-y-0.5 mt-0.5">
+                      {tr.consent.gdpr.dataItems.map((item, i) => (
+                        <li key={i}>{item}</li>
+                      ))}
+                    </ul>
+                    <p className="mt-1">{tr.consent.gdpr.dataNote}</p>
+                  </div>
 
-              <div>
-                <p className="font-medium text-zinc-200">Teknisk behandling af data</p>
-                <p>
-                  Studiet gennemføres via en webapplikation hostet hos Vercel. Dine svar gemmes i
-                  en database (PostgreSQL) hos en cloud-udbyder.
-                </p>
-                <p className="mt-1">
-                  Under chatdelen behandles beskeder af en AI-model via OpenAI's API. Kun de
-                  oplysninger, du selv skriver i chatten eller i spørgeskemaet, sendes til disse
-                  tjenester. Oplysningerne anvendes udelukkende til at gennemføre studiet og
-                  anvendes ikke til træning af AI-modellen.
-                </p>
-                <p className="mt-1">
-                  AI-assistenten kan give upræcise eller forenklede forklaringer. Den bør ikke
-                  betragtes som en autoritativ kilde til rådgivning. Interaktionen bruges
-                  udelukkende som en del af dette forskningsstudie.
-                </p>
-                <p className="mt-1">
-                  Undlad venligst at skrive personlige eller følsomme oplysninger i chatten.
-                </p>
-              </div>
+                  <div>
+                    <p className="font-medium text-zinc-200">{tr.consent.gdpr.technicalLabel}</p>
+                    <p>{tr.consent.gdpr.technicalText1}</p>
+                    <p className="mt-1">{tr.consent.gdpr.technicalText2}</p>
+                    <p className="mt-1">{tr.consent.gdpr.technicalText3}</p>
+                    <p className="mt-1">{tr.consent.gdpr.technicalText4}</p>
+                  </div>
 
-              <div>
-                <p className="font-medium text-zinc-200">Retsgrundlag</p>
-                <p>
-                  Dine personoplysninger behandles på baggrund af dit samtykke i henhold til
-                  GDPR artikel 6, stk. 1, litra a.
-                </p>
-              </div>
+                  <div>
+                    <p className="font-medium text-zinc-200">{tr.consent.gdpr.legalBasisLabel}</p>
+                    <p>{tr.consent.gdpr.legalBasisText}</p>
+                  </div>
 
-              <div>
-                <p className="font-medium text-zinc-200">Frivillighed</p>
-                <p>
-                  Deltagelse er helt frivillig. Du kan til enhver tid stoppe ved at lukke siden
-                  uden negative konsekvenser. Du kan også trække dit samtykke tilbage ved at
-                  kontakte os og få indsigt i din data ved efterspørgelse.
-                </p>
-              </div>
+                  <div>
+                    <p className="font-medium text-zinc-200">{tr.consent.gdpr.voluntaryLabel}</p>
+                    <p>{tr.consent.gdpr.voluntaryText}</p>
+                  </div>
 
-              <div>
-                <p className="font-medium text-zinc-200">Opbevaring af data</p>
-                <p>
-                  Data opbevares pseudonymiseret og bruges udelukkende til forskningsformål i
-                  forbindelse med bachelorprojektet. Data slettes eller anonymiseres senest
-                  6 måneder efter projektets afslutning.
-                </p>
-              </div>
+                  <div>
+                    <p className="font-medium text-zinc-200">{tr.consent.gdpr.storageLabel}</p>
+                    <p>{tr.consent.gdpr.storageText}</p>
+                  </div>
 
-              <div>
-                <p className="font-medium text-zinc-200">Dine rettigheder</p>
-                <p>
-                  Du har ret til indsigt i, rettelse og sletning af dine oplysninger samt ret
-                  til at begrænse behandlingen. Du har desuden ret til at klage til{" "}
-                  <span className="text-zinc-200">Datatilsynet</span> (datatilsynet.dk).
-                </p>
-              </div>
+                  <div>
+                    <p className="font-medium text-zinc-200">{tr.consent.gdpr.rightsLabel}</p>
+                    <p>{tr.consent.gdpr.rightsText}</p>
+                  </div>
 
-              <div>
-                <p className="font-medium text-zinc-200">Dataansvarlig</p>
-                <p>Magnus Lyng og Ole Thomassen, bachelorstuderende ved Københavns Universitet.</p>
-              </div>
+                  <div>
+                    <p className="font-medium text-zinc-200">{tr.consent.gdpr.controllerLabel}</p>
+                    <p>{tr.consent.gdpr.controllerText}</p>
+                  </div>
 
-              <div>
-                <p className="font-medium text-zinc-200">Kontakt</p>
-                <p>Magnus Lyng: lyngmagnus@gmail.com <br /> Ole Thomassen: ole-thomassen@hotmail.com</p>
-              </div>
-            </div>}
+                  <div>
+                    <p className="font-medium text-zinc-200">{tr.consent.gdpr.contactLabel}</p>
+                    <p>{tr.consent.gdpr.contactText.split("\n").map((line, i) => (
+                      <span key={i}>{line}{i < tr.consent.gdpr.contactText.split("\n").length - 1 && <br />}</span>
+                    ))}</p>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2 pt-1">
@@ -684,7 +663,7 @@ export default function Home() {
                   checked={consentedAge}
                   onChange={(e) => setConsentedAge(e.target.checked)}
                 />
-                <span>Jeg bekræfter, at jeg er mindst 18 år.</span>
+                <span>{tr.consent.checkAge}</span>
               </label>
               <label className="flex items-start gap-3 text-sm text-zinc-200">
                 <input
@@ -693,15 +672,12 @@ export default function Home() {
                   checked={consented}
                   onChange={(e) => setConsented(e.target.checked)}
                 />
-                <span>
-                  Jeg har læst informationen ovenfor og giver samtykke til at deltage i studiet
-                  og til behandling af mine oplysninger som beskrevet.
-                </span>
+                <span>{tr.consent.checkConsent}</span>
               </label>
             </div>
             <div className="flex flex-col items-end gap-2">
               {showConsentWarning && (
-                <p className="text-sm text-amber-400">Du skal acceptere begge punkter for at gå videre.</p>
+                <p className="text-sm text-amber-400">{tr.consent.warningConsent}</p>
               )}
               <button
                 className="rounded-lg bg-zinc-700 text-white px-4 py-2"
@@ -714,7 +690,7 @@ export default function Home() {
                   setStep("demographics");
                 }}
               >
-                Næste →
+                {tr.consent.nextBtn}
               </button>
             </div>
           </section>
@@ -723,30 +699,30 @@ export default function Home() {
         {/* DEMOGRAPHICS */}
         {step === "demographics" && (
           <section className="bg-zinc-900 rounded-xl border p-5 border-zinc-800 space-y-5">
-            <h2 className="text-lg font-semibold text-center">Baggrundsspørgsmål</h2>
+            <h2 className="text-lg font-semibold text-center">{tr.demographics.title}</h2>
             <p className="text-sm text-zinc-300">
-              Besvar disse korte spørgsmål om dig selv.
+              {tr.demographics.intro}
             </p>
 
-            {/* Alder */}
+            {/* Age */}
             <div className="space-y-1">
-              <p className="text-sm font-bold text-zinc-100">Alder</p>
+              <p className="text-sm font-bold text-zinc-100">{tr.demographics.ageLabel}</p>
               <input
                 type="number"
                 min={18}
                 max={99}
                 value={age}
                 onChange={(e) => setAge(e.target.value)}
-                placeholder="fx 23"
+                placeholder={tr.demographics.agePlaceholder}
                 className="w-24 rounded-lg bg-zinc-800 text-white px-3 py-2 outline-none placeholder:text-zinc-500 text-sm"
               />
             </div>
 
-            {/* Køn */}
+            {/* Gender */}
             <div className="space-y-2">
-              <p className="text-sm font-bold text-zinc-100">Køn</p>
+              <p className="text-sm font-bold text-zinc-100">{tr.demographics.genderLabel}</p>
               <div className="flex flex-wrap gap-2">
-                {GENDER_OPTIONS.map((opt) => (
+                {(tr.demographics.genderOptions as readonly string[]).map((opt) => (
                   <button
                     key={opt}
                     type="button"
@@ -763,16 +739,16 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Uddannelse */}
+            {/* Education */}
             <div className="space-y-1">
-              <p className="text-sm font-bold text-zinc-100">Højeste fuldførte uddannelse</p>
+              <p className="text-sm font-bold text-zinc-100">{tr.demographics.educationLabel}</p>
               <select
                 value={education}
                 onChange={(e) => setEducation(e.target.value)}
                 className="w-full max-w-xs rounded-lg bg-zinc-800 text-white px-3 py-2 outline-none text-sm"
               >
-                <option value="">Vælg...</option>
-                {EDUCATION_OPTIONS.map((opt) => (
+                <option value="">{tr.demographics.educationPlaceholder}</option>
+                {(tr.demographics.educationOptions as readonly string[]).map((opt) => (
                   <option key={opt} value={opt}>
                     {opt}
                   </option>
@@ -785,11 +761,11 @@ export default function Home() {
                 className="rounded-lg border px-4 py-2 border-zinc-800 text-zinc-100"
                 onClick={() => setStep("consent")}
               >
-                ← Tilbage
+                {tr.demographics.backBtn}
               </button>
               <div className="flex flex-col items-end gap-2">
                 {showDemographicsWarning && (
-                  <p className="text-sm text-amber-400">Du skal udfylde alle felter for at gå videre.</p>
+                  <p className="text-sm text-amber-400">{tr.demographics.warning}</p>
                 )}
                 <button
                   className="rounded-lg bg-zinc-700 text-white px-4 py-2"
@@ -803,7 +779,7 @@ export default function Home() {
                     setStep("pretest");
                   }}
                 >
-                  Videre →
+                  {tr.demographics.nextBtn}
                 </button>
               </div>
             </div>
@@ -813,9 +789,9 @@ export default function Home() {
         {/* PRETEST */}
         {step === "pretest" && (
           <section className="bg-zinc-900 rounded-xl border p-5 border-zinc-800 space-y-5">
-            <h2 className="text-lg font-semibold text-center">Test om forhåndsviden</h2>
+            <h2 className="text-lg font-semibold text-center">{tr.pretest.title}</h2>
             <p className="text-sm text-zinc-300">
-              Besvar disse 4 spørgsmål. Svar/gæt dit bedste :) der er ingen konsekvenser.
+              {tr.pretest.intro}
             </p>
 
             {activeQuestions.map((q, qi) => (
@@ -865,7 +841,7 @@ export default function Home() {
                         setPretestAnswers(next);
                       }}
                     />
-                    Ved ikke
+                    {tr.pretest.dontKnow}
                   </label>
                 </div>
               </div>
@@ -876,11 +852,11 @@ export default function Home() {
                 className="rounded-lg border px-4 py-2 border-zinc-800 text-zinc-100"
                 onClick={() => setStep("demographics")}
               >
-                ← Tilbage
+                {tr.pretest.backBtn}
               </button>
               <div className="flex flex-col items-end gap-2">
                 {showPretestWarning && (
-                  <p className="text-sm text-amber-400">Du skal besvare alle spørgsmål for at gå videre.</p>
+                  <p className="text-sm text-amber-400">{tr.pretest.warning}</p>
                 )}
                 <button
                   className="rounded-lg bg-zinc-700 text-white px-4 py-2"
@@ -895,7 +871,7 @@ export default function Home() {
                     setStep("read");
                   }}
                 >
-                  Videre →
+                  {tr.pretest.nextBtn}
                 </button>
               </div>
             </div>
@@ -905,46 +881,18 @@ export default function Home() {
         {/* READ */}
         {step === "read" && (
           <section className="bg-zinc-900 rounded-xl border p-5 border-zinc-800 space-y-4">
-            <h2 className="text-lg font-semibold text-zinc-100">Hvordan bruger kroppen energi?</h2>
+            <h2 className="text-lg font-semibold text-zinc-100">{tr.read.title}</h2>
             <p className="text-sm text-zinc-300">
-              Læs teksten grundigt. Du skal bruge mindst 1 minut på denne side.
+              {tr.read.instruction}
             </p>
             <div className="rounded-lg bg-zinc-700 p-4 text-sm leading-relaxed text-zinc-200 space-y-3">
-              <p>
-                Kroppens energibalance kan forstås gennem forholdet mellem energiindtag (Energy
-                Intake, EI) og energiforbrug (Total Energy Expenditure, TEE). Energiindtag kommer
-                fra den mad og de drikkevarer, vi indtager, mens energiforbrug er den samlede
-                mængde energi kroppen bruger i løbet af dagen.
-              </p>
-              <p>
-                Hvis en person indtager mere energi (EI), end kroppen bruger (TEE), lagres
-                overskydende energi i kroppen som energidepoter, for eksempel fedt. Hvis kroppen
-                derimod bruger mere energi, end man indtager, vil den trække på disse depoter,
-                hvilket over tid kan føre til vægttab. Denne relation kan udtrykkes som: ændring
-                i energidepoter = EI − TEE.
-              </p>
-              <p>
-                En stor del af energiforbruget kommer fra basal metabolic rate (BMR), som er den
-                energi kroppen bruger i hvile til grundlæggende funktioner som vejrtrækning,
-                blodcirkulation og regulering af kropstemperatur. Derudover bruges energi på
-                fysisk aktivitet, for eksempel når man går, træner eller udfører daglige opgaver.
-              </p>
-              <p>
-                Man kunne derfor forvente, at mere fysisk aktivitet lineært øger det samlede
-                energiforbrug. Forskning tyder dog på, at kroppen delvist kan tilpasse sit
-                energiforbrug. Ifølge den såkaldte constrained energy model kan kroppen reducere
-                energiforbruget i andre biologiske processer, når aktivitetsniveauet stiger.
-              </p>
-              <p>
-                Det betyder, at det samlede energiforbrug ikke nødvendigvis stiger proportionalt
-                med mængden af motion. Kroppen kan i stedet kompensere ved at bruge mindre energi
-                på andre processer. Derfor kan effekten af øget fysisk aktivitet på energiforbrug
-                og vægttab være mindre, end man umiddelbart skulle tro.
-              </p>
+              {(tr.read.text as readonly string[]).map((para, i) => (
+                <p key={i}>{para}</p>
+              ))}
             </div>
             <div className="flex flex-col items-end gap-2">
               {showReadWarning && (
-                <p className="text-sm text-amber-400">Du skal læse teksten i mindst 1 minut.</p>
+                <p className="text-sm text-amber-400">{tr.read.warning}</p>
               )}
               <div className="flex items-center gap-3">
                 {process.env.NODE_ENV === "development" && (
@@ -952,7 +900,7 @@ export default function Home() {
                     className="text-xs text-zinc-500 underline"
                     onClick={() => setReadTimeLeft(0)}
                   >
-                    skip timer (dev)
+                    {tr.read.skipDev}
                   </button>
                 )}
                 <button
@@ -971,7 +919,7 @@ export default function Home() {
                     setStep("zpd");
                   }}
                 >
-                  Videre →
+                  {tr.read.nextBtn}
                 </button>
               </div>
             </div>
@@ -981,27 +929,23 @@ export default function Home() {
         {/* ZPD */}
         {step === "zpd" && (
           <section className="bg-zinc-900 rounded-xl border p-5 border-zinc-800 space-y-5">
-            <h2 className="text-lg font-semibold text-center">Selvvurdering</h2>
-            <p className="text-sm font-semibold text-zinc-100">Tro på egne evner</p>
+            <h2 className="text-lg font-semibold text-center">{tr.zpd.title}</h2>
+            <p className="text-sm font-semibold text-zinc-100">{tr.zpd.selfEfficacyLabel}</p>
             <div className="space-y-3">
               <div className="rounded-lg border border-zinc-700 bg-zinc-800 p-4 space-y-2">
-                <p className="text-sm text-zinc-100">Jeg føler, at jeg kan forstå selv de svære dele af materialet.</p>
+                <p className="text-sm text-zinc-100">{tr.zpd.selfEfficacyQ}</p>
                 <div className="flex gap-2 flex-wrap">
                   {[1, 2, 3, 4, 5].map((n) =>
                     likertBtn(n, selfEfficacy[0], (val) => setSelfEfficacy([val]))
                   )}
                 </div>
-                <p className="text-xs text-zinc-400">1 = Passer slet ikke · 5 = Passer fuldstændigt</p>
+                <p className="text-xs text-zinc-400">{tr.zpd.selfEfficacyScale}</p>
               </div>
             </div>
 
             <div className="space-y-3 pt-2">
-              <p className="text-sm font-semibold text-zinc-100">Vurdering af teksten</p>
-              {[
-                "Teksten vil være nyttigt for mig i fremtiden.",
-                "Det er vigtigt for mig at forstå teksten godt.",
-                "Jeg kan godt lide teksten.",
-              ].map((q, qi) => (
+              <p className="text-sm font-semibold text-zinc-100">{tr.zpd.evtLabel}</p>
+              {(tr.zpd.evtQuestions as readonly string[]).map((q, qi) => (
                 <div key={qi} className="rounded-lg border border-zinc-700 bg-zinc-800 p-4 space-y-2">
                   <p className="text-sm text-zinc-100">{q}</p>
                   <div className="flex gap-2 flex-wrap">
@@ -1013,14 +957,14 @@ export default function Home() {
                       })
                     )}
                   </div>
-                  <p className="text-xs text-zinc-400">1 = Passer ikke · 2 = Passer næsten ikke · 3 = Passer næsten · 4 = Passer fuldt</p>
+                  <p className="text-xs text-zinc-400">{tr.zpd.evtScale}</p>
                 </div>
               ))}
             </div>
 
             <div className="flex flex-col items-end gap-2 pt-2">
               {showZpdWarning && (
-                <p className="text-sm text-amber-400">Du skal besvare alle spørgsmål for at gå videre.</p>
+                <p className="text-sm text-amber-400">{tr.zpd.warning}</p>
               )}
               <button
                 className="rounded-lg bg-zinc-700 text-white px-4 py-2"
@@ -1033,12 +977,12 @@ export default function Home() {
                   await logZPD();
                   setMessages([{
                     role: "assistant",
-                    content: "Du har nu læst teksten. Hvad vil du gerne have hjælp til at forstå bedre?",
+                    content: tr.chat.initialMessage,
                   }]);
                   setStep("chat");
                 }}
               >
-                Start chat →
+                {tr.zpd.startChatBtn}
               </button>
             </div>
           </section>
@@ -1047,9 +991,9 @@ export default function Home() {
         {/* CHAT */}
         {step === "chat" && (
           <section className="space-y-4 rounded-xl border border-zinc-800 bg-zinc-950 p-5">
-            <h2 className="text-lg font-semibold text-zinc-100">Chat</h2>
+            <h2 className="text-lg font-semibold text-zinc-100">{tr.chat.title}</h2>
             <p className="text-sm text-zinc-400">
-              Chat med AI-assistenten i mindst 3,5 minutter.
+              {tr.chat.instruction}
             </p>
 
             <div className="flex flex-col h-[55vh] rounded-xl border border-zinc-800 overflow-hidden">
@@ -1068,7 +1012,7 @@ export default function Home() {
                 ))}
                 {chatLoading && (
                   <div className="bg-zinc-800 text-zinc-400 px-4 py-2 rounded-2xl w-fit text-sm">
-                    Skriver...
+                    {tr.chat.typingIndicator}
                   </div>
                 )}
                 <div ref={bottomRef} />
@@ -1079,7 +1023,7 @@ export default function Home() {
                   className="flex-1 min-w-0 rounded-lg bg-zinc-800 text-white px-3 py-2 outline-none placeholder:text-zinc-500"
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
-                  placeholder="Skriv en besked..."
+                  placeholder={tr.chat.inputPlaceholder}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
@@ -1092,14 +1036,14 @@ export default function Home() {
                   disabled={!chatInput.trim() || chatLoading}
                   onClick={sendMessage}
                 >
-                  Send
+                  {tr.chat.sendBtn}
                 </button>
               </div>
             </div>
 
             <div className="flex flex-col items-end gap-2">
               {showChatWarning && (
-                <p className="text-sm text-amber-400">Du skal have chattet i mindst 3,5 minutter.</p>
+                <p className="text-sm text-amber-400">{tr.chat.warning}</p>
               )}
               <div className="flex items-center gap-3">
                 {process.env.NODE_ENV === "development" && (
@@ -1107,7 +1051,7 @@ export default function Home() {
                     className="text-xs text-zinc-500 underline"
                     onClick={() => setTimeLeft(0)}
                   >
-                    skip timer (dev)
+                    {tr.chat.skipDev}
                   </button>
                 )}
                 <button
@@ -1124,7 +1068,7 @@ export default function Home() {
                     setStep("survey");
                   }}
                 >
-                  Færdig med chat →
+                  {tr.chat.doneBtn}
                 </button>
               </div>
             </div>
@@ -1134,22 +1078,21 @@ export default function Home() {
         {/* FREE TEXT */}
         {step === "freeText" && (
           <section className="bg-zinc-900 rounded-xl border p-5 border-zinc-800 space-y-4">
-            <h2 className="text-lg font-semibold text-center">Anvend teksten i et scenarie</h2>
+            <h2 className="text-lg font-semibold text-center">{tr.freeText.title}</h2>
             <p className="text-sm text-zinc-300">
-              Kim begynder at motionere meget mere end før, men oplever, at vægttabet er
-              mindre end forventet.
+              {tr.freeText.scenario}
             </p>
             <p className="text-sm text-zinc-300">
-              Forklar med egne ord, hvorfor dette kan ske ud fra modellen i teksten, og hvad Kim kunne gøre for at tabe sig yderligere.
+              {tr.freeText.question}
             </p>
             <textarea
               className="w-full rounded-lg bg-zinc-800 text-white px-3 py-2 outline-none placeholder:text-zinc-500 resize-none h-40"
               value={freeTextResponse}
               onChange={(e) => setFreeTextResponse(e.target.value)}
-              placeholder="Skriv her..."
+              placeholder={tr.freeText.placeholder}
             />
             <p className={`text-xs ${freeTextCharCount >= 250 ? "text-green-400" : "text-zinc-400"}`}>
-              Tegn: {freeTextCharCount} / 250
+              {tr.freeText.charCount(freeTextCharCount)}
             </p>
             <div className="flex justify-end">
               <button
@@ -1164,7 +1107,7 @@ export default function Home() {
                   setStep("posttest");
                 }}
               >
-                Videre →
+                {tr.freeText.nextBtn}
               </button>
             </div>
           </section>
@@ -1173,9 +1116,9 @@ export default function Home() {
         {/* POSTTEST */}
         {step === "posttest" && (
           <section className="bg-zinc-900 rounded-xl border p-5 border-zinc-800 space-y-5">
-            <h2 className="text-lg font-semibold text-center">Post-test</h2>
+            <h2 className="text-lg font-semibold text-center">{tr.posttest.title}</h2>
             <p className="text-sm text-zinc-300">
-              Besvar de samme 4 spørgsmål som i starten.
+              {tr.posttest.intro}
             </p>
 
             {activeQuestions.map((q, qi) => (
@@ -1225,7 +1168,7 @@ export default function Home() {
                         setPosttestAnswers(next);
                       }}
                     />
-                    Ved ikke
+                    {tr.posttest.dontKnow}
                   </label>
                 </div>
               </div>
@@ -1236,11 +1179,11 @@ export default function Home() {
                 className="rounded-lg border px-4 py-2 border-zinc-800 text-zinc-100"
                 onClick={() => setStep("freeText")}
               >
-                ← Tilbage
+                {tr.posttest.backBtn}
               </button>
               <div className="flex flex-col items-end gap-2">
                 {showPosttestWarning && (
-                  <p className="text-sm text-amber-400">Du skal besvare alle spørgsmål for at gå videre.</p>
+                  <p className="text-sm text-amber-400">{tr.posttest.warning}</p>
                 )}
                 <button
                   className="rounded-lg bg-zinc-700 text-white px-4 py-2"
@@ -1252,16 +1195,16 @@ export default function Home() {
                     }
                     try {
                       await logPosttest();
-                    await logChatSurvey();
-                    await logLearningSurvey();
-                  } catch (e: any) {
-                    alert("Fejl ved gemning af svar: " + (e?.message ?? "ukendt fejl") + "\n\nTjek konsollen for detaljer.");
-                    return;
-                  }
+                      await logChatSurvey();
+                      await logLearningSurvey();
+                    } catch (e: any) {
+                      alert(tr.posttest.saveError(e?.message ?? "unknown"));
+                      return;
+                    }
                     setStep("done");
                   }}
                 >
-                  Videre →
+                  {tr.posttest.nextBtn}
                 </button>
               </div>
             </div>
@@ -1271,16 +1214,11 @@ export default function Home() {
         {/* SURVEY */}
         {step === "survey" && (
           <section className="bg-zinc-900 rounded-xl border p-5 border-zinc-800 space-y-5">
-            <h2 className="text-lg font-semibold text-center">Afsluttende spørgsmål</h2>
-
+            <h2 className="text-lg font-semibold text-center">{tr.survey.title}</h2>
 
             <div className="space-y-3 pt-2">
-              <p className="text-base font-bold text-zinc-100">Oplevelse</p>
-              {[
-                "Jeg lærte meget af at chatte med chatbotten.",
-                "Det var en nem samtale med chatbotten.",
-                "Chatbotten tilpassede sig mine læringsbehov.",
-              ].map((q, qi) => (
+              <p className="text-base font-bold text-zinc-100">{tr.survey.experienceLabel}</p>
+              {(tr.survey.experienceQuestions as readonly string[]).map((q, qi) => (
                 <div key={qi} className="rounded-lg border border-zinc-700 bg-zinc-800 p-4 space-y-2">
                   <p className="text-sm text-zinc-100">{q}</p>
                   <div className="flex gap-2 flex-wrap">
@@ -1292,33 +1230,23 @@ export default function Home() {
                       })
                     )}
                   </div>
-                  <p className="text-xs text-zinc-400">1 = Meget uenig · 6 = Meget enig</p>
+                  <p className="text-xs text-zinc-400">{tr.survey.experienceScale}</p>
                 </div>
               ))}
             </div>
 
             <div className="space-y-3 pt-2">
-              <p className="text-base font-bold text-zinc-100">Mental indsats</p>
+              <p className="text-base font-bold text-zinc-100">{tr.survey.mentalEffortLabel}</p>
               <div className="rounded-lg border border-zinc-700 bg-zinc-800 p-4 space-y-2">
                 <p className="text-sm text-zinc-100">
-                  I den foregående samtale med chatbotten investerede jeg:
+                  {tr.survey.mentalEffortQ}
                 </p>
                 <div className="flex flex-col gap-1">
-                  {[
-                    [1, "Meget, meget lav mental indsats"],
-                    [2, "Meget lav mental indsats"],
-                    [3, "Lav mental indsats"],
-                    [4, "Ret lav mental indsats"],
-                    [5, "Hverken lav eller høj mental indsats"],
-                    [6, "Ret høj mental indsats"],
-                    [7, "Høj mental indsats"],
-                    [8, "Meget høj mental indsats"],
-                    [9, "Meget, meget høj mental indsats"],
-                  ].map(([val, label]) => (
+                  {(tr.survey.mentalEffortOptions as readonly [number, string][]).map(([val, label]) => (
                     <button
                       key={val}
                       type="button"
-                      onClick={() => setMentalEffort(val as number)}
+                      onClick={() => setMentalEffort(val)}
                       className={`flex items-center gap-3 px-3 py-2 rounded-lg border text-sm text-left ${
                         mentalEffort === val
                           ? "bg-zinc-700 text-white border-zinc-600"
@@ -1335,7 +1263,7 @@ export default function Home() {
 
             <div className="flex flex-col items-end gap-2 pt-2">
               {showSurveyWarning && (
-                <p className="text-sm text-amber-400">Du skal besvare alle spørgsmål for at gå videre.</p>
+                <p className="text-sm text-amber-400">{tr.survey.warning}</p>
               )}
               <button
                 className="rounded-lg bg-zinc-700 text-white px-4 py-2"
@@ -1359,7 +1287,7 @@ export default function Home() {
                   setStep("freeText");
                 }}
               >
-                Videre →
+                {tr.survey.nextBtn}
               </button>
             </div>
           </section>
@@ -1369,16 +1297,15 @@ export default function Home() {
         {step === "done" && (
           <section className="space-y-6 rounded-xl border p-6 border-zinc-800 bg-zinc-900">
             <div className="space-y-2">
-              <h2 className="text-xl font-semibold text-center">Tak fordi du ville være med!</h2>
+              <h2 className="text-xl font-semibold text-center">{tr.done.title}</h2>
               <p className="text-sm text-zinc-300 leading-relaxed">
-                Det betyder så meget for os, at DU ville være med! Dine svar vil bidrage til vores
-                bachelorprojekt i psykologi.
+                {tr.done.thanks}
               </p>
-              <p className="text-sm text-zinc-400">— Ole og Magnus</p>
+              <p className="text-sm text-zinc-400">{tr.done.signoff}</p>
               <p className="text-sm text-zinc-500 italic">
-                Hvis i har nogle spørgsmål kan i evt. kontakte os på:<br/>
-                lyngmagnus@gmail.com<br/>
-                ole-thomassen@hotmail.com
+                {tr.done.contact.split("\n").map((line, i) => (
+                  <span key={i}>{line}{i < tr.done.contact.split("\n").length - 1 && <br />}</span>
+                ))}
               </p>
             </div>
 
@@ -1386,19 +1313,16 @@ export default function Home() {
             <div className="rounded-lg border border-zinc-700 bg-zinc-800 p-4 space-y-3">
               <div>
                 <p className="text-sm font-semibold text-green-300 text-center">
-                  Tag follow-up testen om en uge og vind 500 kr.
+                  {tr.done.giveawayTitle}
                 </p>
                 <p className="text-xs text-zinc-400 mt-0.5">
-                  Vi trækker lod blandt de deltagere, der gennemfører follow-up testen. Skriv din
-                  email nedenfor. Du modtager en mail om ca. en uge med et link til en kort
-                  follow-up test (5 min). Du er først med i lodtrækningen, når du har gennemført
-                  den. Din email bruges kun til dette og knyttes ikke til dine øvrige svar.
+                  {tr.done.giveawayText}
                 </p>
               </div>
 
               {followUpSubmitted ? (
                 <p className="text-sm text-green-400">
-                  Du er tilmeldt! Vi sender dig et link til follow-up studiet om cirka en uge, og kontakter dig selvfølgelig hvis du vinder :)
+                  {tr.done.signupConfirm}
                 </p>
               ) : (
                 <div className="flex flex-col sm:flex-row gap-2">
@@ -1406,7 +1330,7 @@ export default function Home() {
                     type="email"
                     value={followUpEmail}
                     onChange={(e) => setFollowUpEmail(e.target.value)}
-                    placeholder="din@email.dk"
+                    placeholder={tr.done.emailPlaceholder}
                     className="flex-1 min-w-0 rounded-lg bg-zinc-950 text-white px-3 py-2 outline-none placeholder:text-zinc-500 text-sm border border-zinc-700"
                   />
                   <button
@@ -1432,7 +1356,7 @@ export default function Home() {
                       }
                     }}
                   >
-                    Tilmeld
+                    {tr.done.signupBtn}
                   </button>
                 </div>
               )}

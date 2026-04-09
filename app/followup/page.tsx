@@ -2,9 +2,9 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { T, type Lang } from "@/lib/translations";
 
 type Step = "intro" | "freeText" | "done" | "invalid";
-
 
 function FollowUpExperiment() {
   const searchParams = useSearchParams();
@@ -14,9 +14,15 @@ function FollowUpExperiment() {
   const [freeText, setFreeText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [followUpDeviceType, setFollowUpDeviceType] = useState<string | null>(null);
+  const [lang, setLang] = useState<Lang>("da");
 
   useEffect(() => {
     setFollowUpDeviceType(window.innerWidth < 768 ? "mobile" : "desktop");
+    // Read language from localStorage — set when participant did the main experiment
+    try {
+      const stored = localStorage.getItem("lang");
+      if (stored === "da" || stored === "en") setLang(stored);
+    } catch {}
   }, []);
 
   // Restore state from localStorage on mount
@@ -41,6 +47,7 @@ function FollowUpExperiment() {
   }, [step, freeText, token]);
 
   const freeTextCharCount = freeText.length;
+  const tx = T[lang].followup;
 
   const handleSubmit = async () => {
     setSubmitting(true);
@@ -52,6 +59,7 @@ function FollowUpExperiment() {
         followUpFreeText: freeText,
         followUpFreeTextWordCount: freeTextCharCount,
         followUpDeviceType,
+        language: lang,
       }),
     });
     setSubmitting(false);
@@ -70,46 +78,50 @@ function FollowUpExperiment() {
   return (
     <main className="min-h-screen flex items-center justify-center p-6">
       <div className="w-full max-w-2xl space-y-6">
-        <header>
-          <h1 className="text-2xl font-semibold">Bachelor-eksperiment – Follow-up</h1>
+        <header className="flex items-center justify-between">
+          <h1 className="text-2xl font-semibold">{tx.appTitle}</h1>
+          <div className="flex gap-1">
+            {(["da", "en"] as Lang[]).map((l) => (
+              <button
+                key={l}
+                onClick={() => { setLang(l); try { localStorage.setItem("lang", l); } catch {} }}
+                className={`px-3 py-1 rounded-lg text-sm border transition-colors ${
+                  lang === l
+                    ? "bg-zinc-100 text-zinc-900 border-zinc-100"
+                    : "bg-transparent text-zinc-400 border-zinc-700 hover:border-zinc-500"
+                }`}
+              >
+                {T[l].langToggle[l]}
+              </button>
+            ))}
+          </div>
         </header>
 
         {/* INVALID TOKEN */}
         {step === "invalid" && (
           <section className="bg-zinc-900 rounded-xl border p-6 border-zinc-800 space-y-3">
-            <h2 className="text-lg font-semibold text-red-400">Ugyldigt link</h2>
-            <p className="text-sm text-zinc-300">
-              Dette link er ugyldigt eller udløbet. Tjek at du har brugt det korrekte link fra
-              vores e-mail.
-            </p>
-            <p className="text-xs text-zinc-500">
-              Spørgsmål? Kontakt lyngmagnus@gmail.com
-            </p>
+            <h2 className="text-lg font-semibold text-red-400">{tx.invalidTitle}</h2>
+            <p className="text-sm text-zinc-300">{tx.invalidText}</p>
+            <p className="text-xs text-zinc-500">{tx.invalidContact}</p>
           </section>
         )}
 
         {/* INTRO */}
         {step === "intro" && (
           <section className="bg-zinc-900 rounded-xl border p-6 border-zinc-800 space-y-4">
-            <h2 className="text-2xl font-bold text-zinc-50 text-center">
-              Tak fordi du er tilbage! :)
-            </h2>
+            <h2 className="text-2xl font-bold text-zinc-50 text-center">{tx.introTitle}</h2>
             <p className="text-base text-zinc-200 leading-relaxed">
-              Dette er follow-up delen af Magnus og Oles bacheloreksperiment. Det tager kun{" "}
-              <span className="font-medium text-zinc-100">ca. 3–5 minutter</span>.
+              {tx.introText.replace(tx.introHighlight, "")}
+              <span className="font-medium text-zinc-100">{tx.introHighlight}</span>.
             </p>
-            <p className="text-base text-zinc-200 leading-relaxed">
-              Du vil blive bedt om at forklare emnet fra det første eksperiment med egne ord uden hjælpemidler.
-            </p>
-            <p className="text-base text-green-400 font-bold text-center">
-              Er du klar til at vinde 500 kr... måske?
-            </p>
+            <p className="text-base text-zinc-200 leading-relaxed">{tx.introInstruction}</p>
+            <p className="text-base text-green-400 font-bold text-center">{tx.introTeaser}</p>
             <div className="flex justify-end pt-2">
               <button
                 className="rounded-lg bg-zinc-700 text-white px-4 py-2"
                 onClick={() => setStep("freeText")}
               >
-                Start →
+                {tx.startBtn}
               </button>
             </div>
           </section>
@@ -118,30 +130,23 @@ function FollowUpExperiment() {
         {/* FREE TEXT */}
         {step === "freeText" && (
           <section className="bg-zinc-900 rounded-xl border p-5 border-zinc-800 space-y-4">
-            <h2 className="text-lg font-semibold text-center">Anvend teksten i et scenarie</h2>
-            <p className="text-sm text-zinc-300 leading-relaxed">
-              Kim begynder at motionere meget mere end før, men oplever, at vægttabet er
-              mindre end forventet.
-            </p>
-            <p className="text-sm text-zinc-300 leading-relaxed">
-              Forklar med egne ord, hvorfor dette kan ske ud fra modellen i teksten, og hvad Kim kunne gøre for at tabe sig yderligere.
-            </p>
+            <h2 className="text-lg font-semibold text-center">{tx.freeTextTitle}</h2>
+            <p className="text-sm text-zinc-300 leading-relaxed">{tx.freeTextScenario}</p>
+            <p className="text-sm text-zinc-300 leading-relaxed">{tx.freeTextQuestion}</p>
             <textarea
               className="w-full rounded-lg bg-zinc-800 text-white px-3 py-2 outline-none placeholder:text-zinc-500 resize-none h-44"
               value={freeText}
               onChange={(e) => setFreeText(e.target.value)}
-              placeholder="Skriv her..."
+              placeholder={tx.placeholder}
             />
-            <p className="text-xs text-zinc-400">
-              Tegn: {freeTextCharCount} / 250
-            </p>
+            <p className="text-xs text-zinc-400">{tx.charCount(freeTextCharCount)}</p>
             <div className="flex justify-end">
               <button
                 className="rounded-lg bg-zinc-700 text-white px-4 py-2 disabled:opacity-40"
                 disabled={freeTextCharCount < 250 || submitting}
                 onClick={handleSubmit}
               >
-                {submitting ? "Gemmer..." : "Afslut →"}
+                {submitting ? tx.savingBtn : tx.submitBtn}
               </button>
             </div>
           </section>
@@ -150,23 +155,15 @@ function FollowUpExperiment() {
         {/* DONE */}
         {step === "done" && (
           <section className="bg-zinc-900 rounded-xl border p-6 border-zinc-800 space-y-4">
-            <h2 className="text-2xl font-bold text-zinc-50 text-center">Tusind tak!</h2>
+            <h2 className="text-2xl font-bold text-zinc-50 text-center">{tx.doneTitle}</h2>
+            <p className="text-base text-zinc-200 leading-relaxed">{tx.doneText}</p>
             <p className="text-base text-zinc-200 leading-relaxed">
-              Du har nu gennemført follow-up studiet. Dine svar er gemt og bidrager enormt til
-              vores bachelorprojekt og dermed til viden om, hvordan man lærer bedst med AI!
+              {tx.doneDrawText.replace(tx.doneHighlight, "")}
+              <span className="font-medium text-green-400">{tx.doneHighlight}</span>
+              {tx.doneDrawText.split(tx.doneHighlight)[1]}
             </p>
-            <p className="text-base text-zinc-200 leading-relaxed">
-              Vi trækker lod, og 2 vindere får{" "}
-              <span className="font-medium text-green-400">500 kr.</span> hver.
-              Vi kontakter vinderne (måske dig?!) på e-mail i slut maj månede 2026.
-            </p>
-            <p className="text-sm text-zinc-400">— Ole og Magnus</p>
-            <p className="text-sm text-zinc-400 italic">
-              PS.!
-              <br/> Hvis i har nogle spørgsmål kan i evt. kontakte os på:<br/>
-              lyngmagnus@gmail.com<br/>
-              ole-thomassen@hotmail.com
-            </p>
+            <p className="text-sm text-zinc-400">{tx.doneSignoff}</p>
+            <p className="text-sm text-zinc-400 italic whitespace-pre-line">{tx.doneContact}</p>
           </section>
         )}
       </div>
