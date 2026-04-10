@@ -3,6 +3,35 @@ import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
+// Normalize English UI values to canonical Danish so both languages
+// land in the same database groups.
+const GENDER_MAP: Record<string, string> = {
+  male: "Mand",
+  female: "Kvinde",
+  other: "Andet",
+};
+
+const EDUCATION_MAP: Record<string, string> = {
+  "primary school": "Grundskole",
+  "upper secondary (a-levels / equivalent)": "Gymnasial uddannelse (STX, HF, HTX, HHX)",
+  "vocational education": "Erhvervsuddannelse",
+  "professional bachelor": "Professionsbachelor",
+  "bachelor's degree": "Bachelor",
+  "master's degree": "Kandidat",
+  "phd or higher": "PhD eller højere",
+  "other": "Andet",
+};
+
+function normalizeGender(v: string | null | undefined): string | null {
+  if (v == null) return null;
+  return GENDER_MAP[v.toLowerCase()] ?? v;
+}
+
+function normalizeEducation(v: string | null | undefined): string | null {
+  if (v == null) return null;
+  return EDUCATION_MAP[v.toLowerCase()] ?? v;
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -66,8 +95,8 @@ export async function POST(req: Request) {
     // overwrite previously saved values with null on subsequent upserts.
     const data: Record<string, unknown> = { group };
     if (age !== undefined)           data.age = age ?? null;
-    if (gender !== undefined)        data.gender = gender ?? null;
-    if (education !== undefined)     data.education = education ?? null;
+    if (gender !== undefined)        data.gender = normalizeGender(gender);
+    if (education !== undefined)     data.education = normalizeEducation(education);
     if (deviceType !== undefined)    data.deviceType = deviceType ?? null;
     if (confidence !== undefined)    data.confidence = confidence ?? null;
     if (readingTime !== undefined)   data.readingTime = readingTime ?? null;

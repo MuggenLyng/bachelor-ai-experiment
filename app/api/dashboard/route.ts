@@ -63,6 +63,23 @@ function nn(vals: (number | null)[]) {
   return vals.filter((x): x is number => x !== null);
 }
 
+// ── Demographic normalisation (EN → canonical DA) ─────────────────────────────
+const GENDER_MAP: Record<string, string> = {
+  male: "Mand", female: "Kvinde", other: "Andet",
+};
+const EDUCATION_MAP: Record<string, string> = {
+  "primary school": "Grundskole",
+  "upper secondary (a-levels / equivalent)": "Gymnasial uddannelse (STX, HF, HTX, HHX)",
+  "vocational education": "Erhvervsuddannelse",
+  "professional bachelor": "Professionsbachelor",
+  "bachelor's degree": "Bachelor",
+  "master's degree": "Kandidat",
+  "phd or higher": "PhD eller højere",
+  "other": "Andet",
+};
+function normG(v: string | null) { return v ? (GENDER_MAP[v.toLowerCase()] ?? v) : null; }
+function normE(v: string | null) { return v ? (EDUCATION_MAP[v.toLowerCase()] ?? v) : null; }
+
 // ── Route ─────────────────────────────────────────────────────────────────────
 
 export async function GET() {
@@ -159,11 +176,13 @@ export async function GET() {
 
     const ageMean = mean(completed.map((r) => r.age));
     const genderCounts = completed.reduce<Record<string, number>>((acc, r) => {
-      acc[r.gender ?? "Ukendt"] = (acc[r.gender ?? "Ukendt"] ?? 0) + 1;
+      const key = normG(r.gender) ?? "Ukendt";
+      acc[key] = (acc[key] ?? 0) + 1;
       return acc;
     }, {});
     const eduCounts = completed.reduce<Record<string, number>>((acc, r) => {
-      acc[r.education ?? "Ukendt"] = (acc[r.education ?? "Ukendt"] ?? 0) + 1;
+      const key = normE(r.education) ?? "Ukendt";
+      acc[key] = (acc[key] ?? 0) + 1;
       return acc;
     }, {});
 
