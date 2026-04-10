@@ -402,11 +402,20 @@ export default function Dashboard() {
                     ...groups.map(({ grp, color, meanPt }) => (
                       <Scatter key={`${grp}-mean`} data={meanPt} fill={color} legendType="none"
                         shape={(props: any) => {
-                          const { cx, cy } = props;
-                          return <line x1={cx-22} y1={cy} x2={cx+22} y2={cy} stroke={color} strokeWidth={3} strokeLinecap="round" />;
-                        }}>
-                        <ErrorBar dataKey="err" width={10} strokeWidth={2} stroke="#a1a1aa" direction="y" />
-                      </Scatter>
+                          const { cx, cy, yAxis, payload } = props;
+                          const scale = yAxis?.scale;
+                          const err = payload?.err ?? 0;
+                          const y1 = scale ? scale(payload.y + err) : cy - 12;
+                          const y2 = scale ? scale(payload.y - err) : cy + 12;
+                          return (
+                            <g>
+                              <line x1={cx} y1={y1} x2={cx} y2={y2} stroke="#a1a1aa" strokeWidth={2} />
+                              <line x1={cx-8} y1={y1} x2={cx+8} y2={y1} stroke="#a1a1aa" strokeWidth={2} />
+                              <line x1={cx-8} y1={y2} x2={cx+8} y2={y2} stroke="#a1a1aa" strokeWidth={2} />
+                              <line x1={cx-22} y1={cy} x2={cx+22} y2={cy} stroke={color} strokeWidth={3} strokeLinecap="round" />
+                            </g>
+                          );
+                        }} />
                     )),
                   ];
                 })()}
