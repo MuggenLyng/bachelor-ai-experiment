@@ -216,6 +216,37 @@ def run():
     print(corr.to_string())
     corr.to_csv("data/processed/correlations.csv")
 
+    # =========================================================
+    # FRITEKST KODNING — manuel (codeA1/A2/A3/B1/codeTotal)
+    # =========================================================
+    print("\n--- FRITEKST KODNING (manuel, 0–2 pr. parameter) ---")
+    code_cols = ["codeA1", "codeA2", "codeA3", "codeB1", "codeTotal"]
+    has_coding = all(c in df.columns for c in code_cols)
+    if has_coding:
+        coded = df[df["codeTotal"].notna()].copy()
+        print(f"  Kodede deltagere: N={len(coded)}  "
+              f"(control={len(coded[coded['group']=='control'])}, "
+              f"intervention={len(coded[coded['group']=='intervention'])})")
+
+        print(f"\n  Deskriptiv per gruppe:")
+        for grp in ["control", "intervention"]:
+            sub = coded[coded["group"] == grp]
+            print(f"    {grp}: total M={sub['codeTotal'].mean():.2f} SD={sub['codeTotal'].std():.2f} N={len(sub)}")
+            for c in ["codeA1", "codeA2", "codeA3", "codeB1"]:
+                print(f"      {c}: M={sub[c].mean():.2f}")
+
+        print(f"\n  T-test total score:")
+        r = ttest_report("Fritekst total (manuel)", "codeTotal", coded)
+        results.append({**r, "test": "fritekst_total"})
+
+        print(f"\n  T-test per parameter:")
+        for c, label in [("codeA1","A1 energibalance"), ("codeA2","A2 kompensation"),
+                         ("codeA3","A3 konsekvens"), ("codeB1","B1 løsning")]:
+            r = ttest_report(label, c, coded)
+            results.append({**r, "test": f"fritekst_{c}"})
+    else:
+        print("  (ingen kodningsdata i processed.csv — kør pipeline igen efter db push)")
+
     # --- Gem resultater ---
     res_df = pd.DataFrame(results)
     res_df.to_csv("data/processed/results.csv", index=False)

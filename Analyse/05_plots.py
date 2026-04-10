@@ -207,6 +207,128 @@ def run():
         plt.savefig("plots/07_evt_learning.png", dpi=150, bbox_inches="tight")
         plt.close()
 
+    # ── FRITEKST KODNING ────────────────────────────────────────────────────────
+    code_cols = ["codeA1", "codeA2", "codeA3", "codeB1", "codeTotal"]
+    if all(c in df.columns for c in code_cols):
+        coded = df[df["codeTotal"].notna()].copy()
+        from scipy.stats import ttest_ind, sem
+
+        # 8) Dotplot — total fritekst score per deltager per gruppe
+        fig, ax = plt.subplots(figsize=(6, 5))
+        grp_order = ["control", "intervention"]
+        grp_labels = ["Control\n(standard AI)", "Intervention\n(pæd.-psyk. AI)"]
+        for xi, (grp, color) in enumerate(COLORS.items()):
+            sub = coded[coded["group"] == grp]["codeTotal"].dropna().values
+            # jitter x
+            rng = np.random.default_rng(42)
+            jitter = rng.uniform(-0.12, 0.12, size=len(sub))
+            ax.scatter(xi + jitter, sub, color=color, alpha=0.7,
+                       edgecolors="white", linewidth=0.6, s=60, zorder=3)
+            # mean line
+            m = sub.mean()
+            se = sem(sub)
+            ax.plot([xi - 0.22, xi + 0.22], [m, m], color=color,
+                    linewidth=2.5, zorder=4)
+            # SE bar
+            ax.plot([xi, xi], [m - se, m + se], color=color,
+                    linewidth=2, zorder=4)
+            ax.plot([xi - 0.08, xi + 0.08], [m - se, m - se],
+                    color=color, linewidth=1.5, zorder=4)
+            ax.plot([xi - 0.08, xi + 0.08], [m + se, m + se],
+                    color=color, linewidth=1.5, zorder=4)
+
+        # stat annotation
+        ctrl_s = coded[coded["group"] == "control"]["codeTotal"].dropna()
+        intr_s = coded[coded["group"] == "intervention"]["codeTotal"].dropna()
+        t_ft, p_ft = ttest_ind(intr_s, ctrl_s, equal_var=False)
+        ps = ((ctrl_s.std()**2 + intr_s.std()**2) / 2) ** 0.5
+        d_ft = (intr_s.mean() - ctrl_s.mean()) / ps if ps > 0 else 0
+        sig_str = "p < .05 *" if p_ft < 0.05 else f"p = {p_ft:.3f}"
+        ax.set_title(f"Fritekst total score per deltager\n"
+                     f"Δ = {intr_s.mean()-ctrl_s.mean():+.2f}, d = {d_ft:.2f}, {sig_str}")
+        ax.set_xticks([0, 1])
+        ax.set_xticklabels(grp_labels)
+        ax.set_ylabel("Total score (A1+A2+A3+B1, max 8)")
+        ax.set_ylim(-0.3, 8.5)
+        ax.set_yticks(range(9))
+        plt.tight_layout()
+        plt.savefig("plots/08_fritekst_dotplot.png", dpi=150)
+        plt.close()
+
+        # 9) Barplot — gennemsnit per parameter + total per gruppe
+        params = ["codeA1", "codeA2", "codeA3", "codeB1"]
+        param_labels = ["A1\nEnergibalance", "A2\nKompensation",
+                        "A3\nKonsekvens", "B1\nLøsning"]
+        width = 0.35
+
+        fig, (ax_params, ax_total) = plt.subplots(
+            1, 2, figsize=(11, 5),
+            gridspec_kw={"width_ratios": [4, 1.2]}
+        )
+
+        # venstre: individuelle parametre (skala 0–2)
+        x = np.arange(len(params))
+        for i, (grp, color) in enumerate(COLORS.items()):
+            sub = coded[coded["group"] == grp]
+            means = [sub[c].mean() for c in params]
+            sems  = [sem(sub[c].dropna()) for c in params]
+            offset = (i - 0.5) * width
+            ax_params.bar(x + offset, means, width, label=grp.capitalize(),
+                          color=color, alpha=0.85, yerr=sems,
+                          capsize=4, error_kw={"linewidth": 1.2})
+
+        for xi, c in enumerate(params):
+            ci = coded[coded["group"] == "control"][c].dropna()
+            ii = coded[coded["group"] == "intervention"][c].dropna()
+            if len(ci) >= 2 and len(ii) >= 2:
+                _, pp = ttest_ind(ii, ci, equal_var=False)
+                if pp < 0.05:
+                    ymax = max(ci.mean() + sem(ci), ii.mean() + sem(ii))
+                    ax_params.text(xi, ymax + 0.08, "*", ha="center",
+                                   fontsize=14, color="black")
+
+        ax_params.set_xticks(x)
+        ax_params.set_xticklabels(param_labels)
+        ax_params.set_ylabel("Gennemsnit score (0–2)")
+        ax_params.set_ylim(0, 2.3)
+        ax_params.set_yticks([0, 0.5, 1.0, 1.5, 2.0])
+        ax_params.legend()
+        ax_params.set_title("Per parameter (M ± SE)")
+
+        # højre: total score (skala 0–8)
+        for i, (grp, color) in enumerate(COLORS.items()):
+            sub = coded[coded["group"] == grp]["codeTotal"].dropna()
+            offset = (i - 0.5) * width
+            ax_total.bar(offset, sub.mean(), width, label=grp.capitalize(),
+                         color=color, alpha=0.85, yerr=sem(sub),
+                         capsize=4, error_kw={"linewidth": 1.2})
+
+        # signifikansannotering total
+        ct = coded[coded["group"] == "control"]["codeTotal"].dropna()
+        it = coded[coded["group"] == "intervention"]["codeTotal"].dropna()
+        _, pp_tot = ttest_ind(it, ct, equal_var=False)
+        ps_tot = ((ct.std()**2 + it.std()**2) / 2) ** 0.5
+        d_tot = (it.mean() - ct.mean()) / ps_tot if ps_tot > 0 else 0
+        ymax_tot = max(ct.mean() + sem(ct), it.mean() + sem(it))
+        sig_lbl = "*" if pp_tot < 0.05 else f"p={pp_tot:.2f}"
+        ax_total.text(0, ymax_tot + 0.3, sig_lbl, ha="center",
+                      fontsize=12 if pp_tot < 0.05 else 9, color="black")
+
+        ax_total.set_xticks([0])
+        ax_total.set_xticklabels(["Total\n(max 8)"])
+        ax_total.set_ylabel("Gennemsnit score (0–8)")
+        ax_total.set_ylim(0, 8.5)
+        ax_total.set_yticks([0, 2, 4, 6, 8])
+        ax_total.set_title(f"Total (d={d_tot:.2f})")
+
+        plt.suptitle("Fritekst kodning per gruppe (M ± SE)  |  * = p < .05",
+                     y=1.02)
+        plt.tight_layout()
+        plt.savefig("plots/09_fritekst_params.png", dpi=150, bbox_inches="tight")
+        plt.close()
+
+        print("  Gemt → plots/08_fritekst_dotplot.png, plots/09_fritekst_params.png")
+
     print(f"  Gemt → plots/")
 
 if __name__ == "__main__":
