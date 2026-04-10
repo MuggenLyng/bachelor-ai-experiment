@@ -378,30 +378,38 @@ export default function Dashboard() {
                   if (d.isMean) return null;
                   return <div className="bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-200">{d.group}: {d.y}</div>;
                 }} />
-                {(["control","intervention"] as const).map((grp, gi) => {
-                  const pts = (codingPoints ?? []).filter((p: any) => p.group === grp);
-                  const vals = pts.map((p: any) => p.total as number).filter((v: number) => v !== null);
-                  const mn = vals.length ? vals.reduce((a: number,b: number)=>a+b,0)/vals.length : null;
-                  const semV = vals.length > 1
-                    ? Math.sqrt(vals.reduce((a:number,b:number)=>a+(b-mn!)*(b-mn!),0)/(vals.length-1)) / Math.sqrt(vals.length)
-                    : 0;
-                  const color = COLORS[grp];
-                  const dots = pts.map((p: any, i: number) => ({
-                    x: gi + (((i * 7919) % 100) / 100 - 0.5) * 0.18,
-                    y: p.total, group: grp, isMean: false,
-                  }));
-                  const meanPt = mn !== null ? [{ x: gi, y: mn, err: semV, isMean: true }] : [];
+                {(() => {
+                  const groups = (["control","intervention"] as const).map((grp, gi) => {
+                    const pts = (codingPoints ?? []).filter((p: any) => p.group === grp);
+                    const vals = pts.map((p: any) => p.total as number).filter((v: number) => v !== null);
+                    const mn = vals.length ? vals.reduce((a: number,b: number)=>a+b,0)/vals.length : null;
+                    const semV = vals.length > 1
+                      ? Math.sqrt(vals.reduce((a:number,b:number)=>a+(b-mn!)*(b-mn!),0)/(vals.length-1)) / Math.sqrt(vals.length)
+                      : 0;
+                    const color = COLORS[grp];
+                    const dots = pts.map((p: any, i: number) => ({
+                      x: gi + (((i * 7919) % 100) / 100 - 0.5) * 0.18,
+                      y: p.total, group: grp, isMean: false,
+                    }));
+                    const meanPt = mn !== null ? [{ x: gi, y: mn, err: semV, isMean: true }] : [];
+                    return { grp, gi, color, dots, meanPt };
+                  });
+                  // Render all dots first, then all means+SE on top
                   return [
-                    <Scatter key={`${grp}-dots`} data={dots} fill={color} opacity={0.75} />,
-                    <Scatter key={`${grp}-mean`} data={meanPt} fill={color} legendType="none"
-                      shape={(props: any) => {
-                        const { cx, cy } = props;
-                        return <line x1={cx-14} y1={cy} x2={cx+14} y2={cy} stroke={color} strokeWidth={3} strokeLinecap="round" />;
-                      }}>
-                      <ErrorBar dataKey="err" width={8} strokeWidth={2} stroke="#a1a1aa" direction="y" />
-                    </Scatter>,
+                    ...groups.map(({ grp, color, dots }) => (
+                      <Scatter key={`${grp}-dots`} data={dots} fill={color} opacity={0.75} />
+                    )),
+                    ...groups.map(({ grp, color, meanPt }) => (
+                      <Scatter key={`${grp}-mean`} data={meanPt} fill={color} legendType="none"
+                        shape={(props: any) => {
+                          const { cx, cy } = props;
+                          return <line x1={cx-22} y1={cy} x2={cx+22} y2={cy} stroke={color} strokeWidth={3} strokeLinecap="round" />;
+                        }}>
+                        <ErrorBar dataKey="err" width={10} strokeWidth={2} stroke="#a1a1aa" direction="y" />
+                      </Scatter>
+                    )),
                   ];
-                })}
+                })()}
               </ScatterChart>
             </ResponsiveContainer>
             <div className="flex gap-3 mt-2 text-xs text-zinc-400">
@@ -419,43 +427,42 @@ export default function Dashboard() {
             <p className="text-xs text-zinc-400 mb-1">Total score (M ± SE)</p>
             {codingStats && <StatRow cmp={codingStats.totalCmp} />}
             <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={[{
-                name: "Total (0–8)",
-                Control: codingStats?.params?.find((x:any)=>x.param==="total")?.controlMean ?? 0,
-                Intervention: codingStats?.params?.find((x:any)=>x.param==="total")?.interventionMean ?? 0,
-                errCtrl: codingStats?.params?.find((x:any)=>x.param==="total")?.controlSem ?? 0,
-                errIntr: codingStats?.params?.find((x:any)=>x.param==="total")?.interventionSem ?? 0,
-              }]} barGap={8} margin={{ top: 16, right: 16, bottom: 0, left: 0 }}>
+              <BarChart
+                data={(() => {
+                  const t = codingStats?.params?.find((x:any)=>x.param==="total");
+                  return [
+                    { name: "Control",      value: t?.controlMean??0,      err: t?.controlSem??0,      fill: COLORS.control },
+                    { name: "Intervention", value: t?.interventionMean??0,  err: t?.interventionSem??0,  fill: COLORS.intervention },
+                  ];
+                })()}
+                barGap={8} margin={{ top: 16, right: 16, bottom: 0, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
                 <XAxis dataKey="name" tick={{ fill: "#a1a1aa", fontSize: 11 }} />
                 <YAxis domain={[0, 8]} ticks={[0,2,4,6,8]} tick={{ fill: "#a1a1aa", fontSize: 11 }} />
                 <Tooltip formatter={tooltipFmt} contentStyle={{ background: "#18181b", border: "1px solid #3f3f46" }} />
-                <Bar dataKey="Control" fill={COLORS.control} radius={[4,4,0,0]}>
-                  <ErrorBar dataKey="errCtrl" width={6} strokeWidth={2} stroke="#a1a1aa" />
-                </Bar>
-                <Bar dataKey="Intervention" fill={COLORS.intervention} radius={[4,4,0,0]}>
-                  <ErrorBar dataKey="errIntr" width={6} strokeWidth={2} stroke="#a1a1aa" />
+                <Bar dataKey="value" radius={[4,4,0,0]}>
+                  {[COLORS.control, COLORS.intervention].map((fill, i) => (
+                    <Cell key={i} fill={fill} />
+                  ))}
+                  <ErrorBar dataKey="err" width={6} strokeWidth={2} stroke="#a1a1aa" />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
-            <div className="flex gap-4 mt-2 text-xs text-zinc-500">
-              <span><span className="inline-block w-2 h-2 rounded-sm bg-zinc-500 mr-1" />Control</span>
-              <span><span className="inline-block w-2 h-2 rounded-sm bg-blue-500 mr-1" />Intervention</span>
-            </div>
           </div>
         </div>
 
         {/* Bottom row: params barplot full width */}
         <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
           <p className="text-xs text-zinc-400 mb-1">Parametre (M ± SE, skala 0–2)</p>
-          {codingStats && <StatRow cmp={codingStats.a1Cmp} />}
-          <ResponsiveContainer width="100%" height={200}>
+          <ResponsiveContainer width="100%" height={220}>
             <BarChart
-              data={["A1","A2","A3","B1"].map(p => {
+              data={[
+                ["A1","Energibalance"],["A2","Kompensation"],["A3","Konsekvens"],["B1","Løsning"],
+              ].map(([p, label]) => {
                 const s = codingStats?.params?.find((x:any) => x.param === p);
-                return { name: p, Control: s?.controlMean??0, Intervention: s?.interventionMean??0, errCtrl: s?.controlSem??0, errIntr: s?.interventionSem??0 };
+                return { name: label, Control: s?.controlMean??0, Intervention: s?.interventionMean??0, errCtrl: s?.controlSem??0, errIntr: s?.interventionSem??0 };
               })}
-              barGap={4} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
+              barGap={4} margin={{ top: 8, right: 16, bottom: 4, left: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
               <XAxis dataKey="name" tick={{ fill: "#a1a1aa", fontSize: 11 }} />
               <YAxis domain={[0, 2]} ticks={[0,1,2]} tick={{ fill: "#a1a1aa", fontSize: 11 }} />
