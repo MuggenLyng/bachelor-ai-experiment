@@ -357,7 +357,7 @@ export default function Dashboard() {
       <Section title="Primær effekt">
 
         {/* Top row: dotplot + total barplot side by side */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
           {/* Dotplot */}
           <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
@@ -483,9 +483,9 @@ export default function Dashboard() {
                 const s = codingStats?.params?.find((x:any) => x.param === p);
                 return { name: label, Control: s?.controlMean??0, Intervention: s?.interventionMean??0, errCtrl: s?.controlSem??0, errIntr: s?.interventionSem??0 };
               })}
-              barGap={4} margin={{ top: 8, right: 16, bottom: 4, left: 0 }}>
+              barGap={4} margin={{ top: 8, right: 16, bottom: 36, left: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-              <XAxis dataKey="name" tick={{ fill: "#a1a1aa", fontSize: 11 }} />
+              <XAxis dataKey="name" tick={{ fill: "#a1a1aa", fontSize: 11 }} angle={-20} textAnchor="end" interval={0} />
               <YAxis domain={[0, 2]} ticks={[0,1,2]} tick={{ fill: "#a1a1aa", fontSize: 11 }} />
               <Tooltip formatter={tooltipFmt} contentStyle={{ background: "#18181b", border: "1px solid #3f3f46" }} />
               <Bar dataKey="Control" fill={COLORS.control} radius={[4,4,0,0]}>
