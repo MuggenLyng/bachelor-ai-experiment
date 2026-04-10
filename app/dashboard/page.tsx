@@ -448,7 +448,19 @@ export default function Dashboard() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
                 <XAxis dataKey="name" tick={{ fill: "#a1a1aa", fontSize: 11 }} />
                 <YAxis domain={[0, 8]} ticks={[0,2,4,6,8]} tick={{ fill: "#a1a1aa", fontSize: 11 }} />
-                <Tooltip formatter={tooltipFmt} contentStyle={{ background: "#18181b", border: "1px solid #3f3f46" }} />
+                <Tooltip
+                  contentStyle={{ background: "#18181b", border: "1px solid #3f3f46" }}
+                  content={({ payload }) => {
+                    if (!payload?.length) return null;
+                    const d = payload[0].payload;
+                    return (
+                      <div style={{ background: "#18181b", border: "1px solid #3f3f46", borderRadius: 6, padding: "6px 10px", fontSize: 12 }}>
+                        <span style={{ color: d.fill, fontWeight: 600 }}>{d.name}</span>
+                        <span style={{ color: "#e4e4e7" }}>{": "}{typeof d.value === "number" ? d.value.toFixed(2) : d.value}</span>
+                      </div>
+                    );
+                  }}
+                />
                 <Bar dataKey="value" radius={[4,4,0,0]}>
                   {[COLORS.control, COLORS.intervention].map((fill, i) => (
                     <Cell key={i} fill={fill} />
