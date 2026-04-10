@@ -244,6 +244,49 @@ def run():
                          ("codeA3","A3 konsekvens"), ("codeB1","B1 løsning")]:
             r = ttest_report(label, c, coded)
             results.append({**r, "test": f"fritekst_{c}"})
+
+        # =========================================================
+        # PRETEST SOM KOVARIAT — korrelation + ANCOVA
+        # =========================================================
+        print("\n--- PRETEST × FRITEKST (konfunderingscheck) ---")
+        sub_cov = coded[["pretestScore", "codeTotal", "group"]].dropna()
+        print(f"  N med både pretest og codeTotal: {len(sub_cov)}")
+
+        if len(sub_cov) > 4:
+            # Korrelation på tværs af grupper
+            slope, intercept, r_val, p_val, se = stats.linregress(
+                sub_cov["pretestScore"], sub_cov["codeTotal"]
+            )
+            print(f"\n  Korrelation pretestScore → codeTotal (alle grupper):")
+            print(f"    r={r_val:.3f}, r²={r_val**2:.3f}, β={slope:.3f}, p={p_val:.3f}, N={len(sub_cov)}")
+            if abs(r_val) < 0.15:
+                interp = "svag/ingen — pretest er ikke en væsentlig kovariat"
+            elif abs(r_val) < 0.35:
+                interp = "moderat — pretest bør kontrolleres for"
+            else:
+                interp = "stærk — pretest er en vigtig kovariat"
+            print(f"    => {interp}")
+
+            # Per gruppe (for at se om mønstret er konsistent)
+            print(f"\n  Korrelation per gruppe:")
+            for grp in ["control", "intervention"]:
+                g = sub_cov[sub_cov["group"] == grp]
+                if len(g) > 3:
+                    _, _, r_g, p_g, _ = stats.linregress(g["pretestScore"], g["codeTotal"])
+                    print(f"    {grp}: r={r_g:.3f}, p={p_g:.3f}, N={len(g)}")
+
+            # Gem korrelationsresultat til videre brug
+            results.append({
+                "label": "pretest × codeTotal (r)",
+                "t": np.nan, "p": p_val, "d": r_val,
+                "ctrl_M": np.nan, "intr_M": np.nan,
+                "diff": slope, "ci_low": np.nan, "ci_high": np.nan,
+                "test": "pretest_codeTotal_r",
+            })
+
+            print(f"\n  => Kør ANCOVA (04_ancova_fritekst) hvis |r| > 0.15")
+        else:
+            print("  (for få deltagere med begge mål)")
     else:
         print("  (ingen kodningsdata i processed.csv — kør pipeline igen efter db push)")
 
