@@ -7,6 +7,7 @@ import {
   PieChart, Pie, Cell,
   ComposedChart, Area, Line,
   LineChart,
+  ScatterChart, Scatter,
 } from "recharts";
 
 const COLORS = { control: "#6B7280", intervention: "#3B82F6" };
@@ -292,7 +293,7 @@ export default function Dashboard() {
   if (loading) return <div className="p-10 text-zinc-400">Henter data...</div>;
   if (!data) return <div className="p-10 text-red-400">Fejl ved hentning af data.</div>;
 
-  const { nTotal, nCompleted, nDropouts, nFollowUp, groupStats, comparisons: cmp, demographics, deviceGain, deviceComparison, lastUpdated } = data;
+  const { nTotal, nCompleted, nDropouts, nFollowUp, groupStats, comparisons: cmp, demographics, deviceGain, deviceComparison, codingPoints, codingStats, lastUpdated } = data;
   const ctrl = groupStats.control;
   const intr = groupStats.intervention;
 
@@ -354,8 +355,101 @@ export default function Dashboard() {
 
       {/* Primær effekt */}
       <Section title="Primær effekt">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
+        {/* 1) Dotplot — total fritekst score per deltager */}
+        <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
+          <p className="text-xs text-zinc-400 mb-1">Fritekst total score per deltager (A1+A2+A3+B1, max 8)</p>
+          {codingStats && <StatRow cmp={codingStats.totalCmp} />}
+          <ResponsiveContainer width="100%" height={220}>
+            <ScatterChart margin={{ top: 16, right: 24, bottom: 0, left: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+              <XAxis dataKey="x" type="number" domain={[-0.5, 1.5]}
+                ticks={[0, 1]}
+                tickFormatter={(v: number) => v === 0 ? "Control" : "Intervention"}
+                tick={{ fill: "#a1a1aa", fontSize: 12 }} />
+              <YAxis dataKey="y" domain={[0, 8]} ticks={[0,2,4,6,8]}
+                tick={{ fill: "#a1a1aa", fontSize: 12 }} label={{ value: "Score (0–8)", angle: -90, position: "insideLeft", fill: "#71717a", fontSize: 11, dy: 40 }} />
+              <Tooltip
+                cursor={false}
+                content={({ payload }) => {
+                  if (!payload?.length) return null;
+                  const d = payload[0].payload;
+                  return <div className="bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-200">{d.group}: {d.y}</div>;
+                }}
+              />
+              {(["control","intervention"] as const).map((grp, gi) => {
+                const pts = (codingPoints ?? []).filter((p: any) => p.group === grp);
+                const vals = pts.map((p: any) => p.total as number).filter((v: number) => v !== null);
+                const mn = vals.length ? vals.reduce((a: number,b: number)=>a+b,0)/vals.length : null;
+                const sem = vals.length > 1 ? Math.sqrt(vals.reduce((a: number,b: number)=>a+(b-mn!)*(b-mn!),0)/(vals.length-1)) / Math.sqrt(vals.length) : 0;
+                const color = COLORS[grp];
+                const scatterData = pts.map((p: any, i: number) => ({
+                  x: gi + (((i * 7919) % 100) / 100 - 0.5) * 0.22,
+                  y: p.total,
+                  group: grp,
+                }));
+                return (
+                  <Scatter key={grp} data={scatterData} fill={color} opacity={0.75} line={false}>
+                    {mn !== null && (
+                      <>
+                        <ReferenceLine y={mn} stroke={color} strokeWidth={2.5} strokeDasharray="" segment={[{x:gi-0.22,y:mn},{x:gi+0.22,y:mn}] as any} />
+                        <ReferenceLine y={mn - sem} stroke={color} strokeWidth={1} strokeDasharray="2 2" />
+                        <ReferenceLine y={mn + sem} stroke={color} strokeWidth={1} strokeDasharray="2 2" />
+                      </>
+                    )}
+                  </Scatter>
+                );
+              })}
+            </ScatterChart>
+          </ResponsiveContainer>
+          <div className="flex gap-4 mt-2 text-xs text-zinc-400">
+            {(["control","intervention"] as const).map(grp => {
+              const p = codingStats?.params?.find((p: any) => p.param === "total");
+              const m = grp === "control" ? p?.controlMean : p?.interventionMean;
+              const se = grp === "control" ? p?.controlSem : p?.interventionSem;
+              return <span key={grp}><span className="inline-block w-2 h-2 rounded-sm mr-1" style={{background: COLORS[grp]}} />{grp === "control" ? "Control" : "Intervention"}: M={fmt(m ?? null)} ± SE {fmt(se ?? null)}</span>;
+            })}
+          </div>
+        </div>
+
+        {/* 2) Barplot — per parameter */}
+        <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
+          <p className="text-xs text-zinc-400 mb-1">Fritekst score per parameter (M ± SE, 0–2)</p>
+          {codingStats && <StatRow cmp={codingStats.a1Cmp} />}
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart
+              data={["A1","A2","A3","B1"].map(p => {
+                const s = codingStats?.params?.find((x: any) => x.param === p);
+                return {
+                  name: p,
+                  Control:      s?.controlMean ?? 0,
+                  Intervention: s?.interventionMean ?? 0,
+                  errCtrl:      s?.controlSem ?? 0,
+                  errIntr:      s?.interventionSem ?? 0,
+                };
+              })}
+              barGap={4}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+              <XAxis dataKey="name" tick={{ fill: "#a1a1aa", fontSize: 12 }} />
+              <YAxis domain={[0, 2]} ticks={[0, 0.5, 1, 1.5, 2]} tick={{ fill: "#a1a1aa", fontSize: 12 }} />
+              <Tooltip formatter={tooltipFmt} contentStyle={{ background: "#18181b", border: "1px solid #3f3f46" }} />
+              <Bar dataKey="Control" fill={COLORS.control} radius={[4,4,0,0]}>
+                <ErrorBar dataKey="errCtrl" width={4} strokeWidth={2} stroke={COLORS.control} />
+              </Bar>
+              <Bar dataKey="Intervention" fill={COLORS.intervention} radius={[4,4,0,0]}>
+                <ErrorBar dataKey="errIntr" width={4} strokeWidth={2} stroke={COLORS.intervention} />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+          <div className="flex gap-4 mt-1 text-xs text-zinc-500">
+            <span><span className="inline-block w-2 h-2 rounded-sm bg-zinc-500 mr-1" />Control</span>
+            <span><span className="inline-block w-2 h-2 rounded-sm bg-blue-500 mr-1" />Intervention</span>
+          </div>
+        </div>
+
+        {/* 3) MCQ */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
             <p className="text-xs text-zinc-400 mb-3">Gennemsnitlig score: pre vs. post MCQ</p>
             <ResponsiveContainer width="100%" height={200}>
@@ -397,25 +491,6 @@ export default function Dashboard() {
               <span>Δ = {fmt(intr.gainMean !== null && ctrl.gainMean !== null ? intr.gainMean - ctrl.gainMean : null)}</span>
             </div>
             <StatRow cmp={cmp?.learningGain} />
-          </div>
-        </div>
-
-        <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-5 space-y-2">
-          <p className="text-sm font-semibold text-zinc-300">Fritekst (transfer/recall)</p>
-          <p className="text-xs text-zinc-400">Mangler manuel kodning — kommer snart.</p>
-          <div className="flex gap-2 mt-2">
-            <div className="flex-1 bg-zinc-900 rounded-lg border border-zinc-700 p-3 text-center">
-              <p className="text-xs text-zinc-500">Control</p>
-              <p className="text-2xl font-bold text-zinc-600 mt-1">—</p>
-            </div>
-            <div className="flex-1 bg-zinc-900 rounded-lg border border-zinc-700 p-3 text-center">
-              <p className="text-xs text-zinc-500">Intervention</p>
-              <p className="text-2xl font-bold text-zinc-600 mt-1">—</p>
-            </div>
-            <div className="flex-1 bg-zinc-900 rounded-lg border border-zinc-700 p-3 text-center">
-              <p className="text-xs text-zinc-500">p / d</p>
-              <p className="text-2xl font-bold text-zinc-600 mt-1">—</p>
-            </div>
           </div>
         </div>
       </Section>

@@ -81,6 +81,20 @@ model ParticipantLog {
   followUpFreeText          String?
   followUpFreeTextWordCount Int?
 
+  // manual coding — posttest free text (0–2 per parameter)
+  codeA1    Int?
+  codeA2    Int?
+  codeA3    Int?
+  codeB1    Int?
+  codeTotal Int?
+
+  // manual coding — follow-up free text (0–2 per parameter)
+  followUpCodeA1    Int?
+  followUpCodeA2    Int?
+  followUpCodeA3    Int?
+  followUpCodeB1    Int?
+  followUpCodeTotal Int?
+
   createdAt            DateTime @default(now())
   updatedAt            DateTime? @updatedAt
 }

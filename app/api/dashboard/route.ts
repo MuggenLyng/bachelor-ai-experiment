@@ -96,6 +96,7 @@ export async function GET() {
         userMessageCount: true, assistantMessageCount: true,
         deviceType: true, age: true, gender: true, education: true,
         createdAt: true, followUpCompleted: true,
+        codeA1: true, codeA2: true, codeA3: true, codeB1: true, codeTotal: true,
       },
     });
 
@@ -211,12 +212,55 @@ export async function GET() {
       r.pretestScore !== null && r.posttestScore !== null ? r.posttestScore - r.pretestScore : null));
     const deviceComparison = welchTest(mobileGains, desktopGains);
 
+    // ── Fritekst kodning ──────────────────────────────────────────────────────
+    const coded = all.filter(r => r.codeTotal !== null);
+    const codingPoints = coded.map(r => ({
+      group: r.group,
+      total: r.codeTotal,
+      A1: r.codeA1, A2: r.codeA2, A3: r.codeA3, B1: r.codeB1,
+    }));
+
+    function codeMean(grp: string, key: "codeA1"|"codeA2"|"codeA3"|"codeB1"|"codeTotal") {
+      const vals = nn(coded.filter(r => r.group === grp).map(r => r[key]));
+      return vals.length ? +(vals.reduce((a,b) => a+b, 0) / vals.length).toFixed(3) : null;
+    }
+    function codeSem(grp: string, key: "codeA1"|"codeA2"|"codeA3"|"codeB1"|"codeTotal") {
+      const vals = nn(coded.filter(r => r.group === grp).map(r => r[key]));
+      if (vals.length < 2) return null;
+      const m = vals.reduce((a,b)=>a+b,0)/vals.length;
+      const sd = Math.sqrt(vals.reduce((a,b)=>a+(b-m)**2,0)/(vals.length-1));
+      return +(sd/Math.sqrt(vals.length)).toFixed(3);
+    }
+
+    const codingStats = {
+      nCoded: coded.length,
+      params: ["A1","A2","A3","B1","total"].map(p => {
+        const key = (p === "total" ? "codeTotal" : `code${p}`) as "codeA1"|"codeA2"|"codeA3"|"codeB1"|"codeTotal";
+        return {
+          param: p,
+          controlMean: codeMean("control", key),
+          controlSem:  codeSem("control", key),
+          interventionMean: codeMean("intervention", key),
+          interventionSem:  codeSem("intervention", key),
+        };
+      }),
+      totalCmp: welchTest(
+        nn(coded.filter(r=>r.group==="control").map(r=>r.codeTotal)),
+        nn(coded.filter(r=>r.group==="intervention").map(r=>r.codeTotal)),
+      ),
+      a1Cmp: welchTest(
+        nn(coded.filter(r=>r.group==="control").map(r=>r.codeA1)),
+        nn(coded.filter(r=>r.group==="intervention").map(r=>r.codeA1)),
+      ),
+    };
+
     return NextResponse.json({
       nTotal: all.length, nCompleted: completed.length, nDropouts: dropouts.length,
       nFollowUp,
       dropoutByStep, groupStats, comparisons,
       demographics: { ageMean, genderCounts, eduCounts },
       deviceGain, deviceComparison,
+      codingPoints, codingStats,
       lastUpdated: new Date().toISOString(),
     });
   } catch (err: any) {
