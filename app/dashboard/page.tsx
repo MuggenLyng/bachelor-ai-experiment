@@ -308,10 +308,10 @@ export default function Dashboard() {
   ];
 
   const secondaryData = [
-    { name: "Subj.",     Control: ctrl.perceivedLearning1Mean,  Intervention: intr.perceivedLearning1Mean },
-    { name: "Samtale",   Control: ctrl.easeOfConversating1Mean, Intervention: intr.easeOfConversating1Mean },
-    { name: "Tilpasn.",  Control: ctrl.adaptingToNeeds1Mean,    Intervention: intr.adaptingToNeeds1Mean },
-    { name: "Mental",    Control: ctrl.mentalEffortMean,         Intervention: intr.mentalEffortMean },
+    { name: "Subj.",    Control: ctrl.perceivedLearning1Mean,  errCtrl: ctrl.perceivedLearning1Sem,  Intervention: intr.perceivedLearning1Mean,  errIntr: intr.perceivedLearning1Sem },
+    { name: "Samtale",  Control: ctrl.easeOfConversating1Mean, errCtrl: ctrl.easeOfConversating1Sem, Intervention: intr.easeOfConversating1Mean, errIntr: intr.easeOfConversating1Sem },
+    { name: "Tilpasn.", Control: ctrl.adaptingToNeeds1Mean,    errCtrl: ctrl.adaptingToNeeds1Sem,    Intervention: intr.adaptingToNeeds1Mean,    errIntr: intr.adaptingToNeeds1Sem },
+    { name: "Mental",   Control: ctrl.mentalEffortMean,        errCtrl: ctrl.mentalEffortSem,        Intervention: intr.mentalEffortMean,        errIntr: intr.mentalEffortSem },
   ];
 
   const genderData = Object.entries(demographics.genderCounts as Record<string, number>).map(
@@ -356,14 +356,14 @@ export default function Dashboard() {
       {/* Primær effekt */}
       <Section title="Primær effekt">
 
-        {/* 1) Dotplot + 2) Barplot side om side */}
-        <div className="grid grid-cols-5 gap-4">
+        {/* Top row: dotplot + total barplot side by side */}
+        <div className="grid grid-cols-2 gap-4">
 
-          {/* Dotplot — komprimeret, 2/5 bredde */}
-          <div className="col-span-2 bg-zinc-900 rounded-xl border border-zinc-800 p-4">
+          {/* Dotplot */}
+          <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
             <p className="text-xs text-zinc-400 mb-1">Fritekst total score (0–8)</p>
             {codingStats && <StatRow cmp={codingStats.totalCmp} />}
-            <ResponsiveContainer width="100%" height={260}>
+            <ResponsiveContainer width="100%" height={280}>
               <ScatterChart margin={{ top: 16, right: 16, bottom: 0, left: -10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
                 <XAxis dataKey="x" type="number" domain={[-0.5, 1.5]}
@@ -390,7 +390,6 @@ export default function Dashboard() {
                     x: gi + (((i * 7919) % 100) / 100 - 0.5) * 0.18,
                     y: p.total, group: grp, isMean: false,
                   }));
-                  // mean + SE som separat scatter med custom shape
                   const meanPt = mn !== null ? [{ x: gi, y: mn, err: semV, isMean: true }] : [];
                   return [
                     <Scatter key={`${grp}-dots`} data={dots} fill={color} opacity={0.75} />,
@@ -399,7 +398,7 @@ export default function Dashboard() {
                         const { cx, cy } = props;
                         return <line x1={cx-14} y1={cy} x2={cx+14} y2={cy} stroke={color} strokeWidth={3} strokeLinecap="round" />;
                       }}>
-                      <ErrorBar dataKey="err" width={8} strokeWidth={2} stroke={color} direction="y" />
+                      <ErrorBar dataKey="err" width={8} strokeWidth={2} stroke="#a1a1aa" direction="y" />
                     </Scatter>,
                   ];
                 })}
@@ -415,50 +414,27 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Barplot — total + params, 3/5 bredde */}
-          <div className="col-span-3 bg-zinc-900 rounded-xl border border-zinc-800 p-4">
-            <p className="text-xs text-zinc-400 mb-1">Fritekst score per parameter (M ± SE)</p>
-            {codingStats && <StatRow cmp={codingStats.a1Cmp} />}
-            {/* Total */}
-            <p className="text-xs text-zinc-500 mt-3 mb-1">Total (0–8)</p>
-            <ResponsiveContainer width="100%" height={90}>
+          {/* Total barplot */}
+          <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
+            <p className="text-xs text-zinc-400 mb-1">Total score (M ± SE)</p>
+            {codingStats && <StatRow cmp={codingStats.totalCmp} />}
+            <ResponsiveContainer width="100%" height={280}>
               <BarChart data={[{
-                name: "Total",
+                name: "Total (0–8)",
                 Control: codingStats?.params?.find((x:any)=>x.param==="total")?.controlMean ?? 0,
                 Intervention: codingStats?.params?.find((x:any)=>x.param==="total")?.interventionMean ?? 0,
                 errCtrl: codingStats?.params?.find((x:any)=>x.param==="total")?.controlSem ?? 0,
                 errIntr: codingStats?.params?.find((x:any)=>x.param==="total")?.interventionSem ?? 0,
-              }]} barGap={4} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
+              }]} barGap={8} margin={{ top: 16, right: 16, bottom: 0, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
                 <XAxis dataKey="name" tick={{ fill: "#a1a1aa", fontSize: 11 }} />
-                <YAxis domain={[0, 8]} ticks={[0,4,8]} tick={{ fill: "#a1a1aa", fontSize: 11 }} />
+                <YAxis domain={[0, 8]} ticks={[0,2,4,6,8]} tick={{ fill: "#a1a1aa", fontSize: 11 }} />
                 <Tooltip formatter={tooltipFmt} contentStyle={{ background: "#18181b", border: "1px solid #3f3f46" }} />
                 <Bar dataKey="Control" fill={COLORS.control} radius={[4,4,0,0]}>
-                  <ErrorBar dataKey="errCtrl" width={4} strokeWidth={2} stroke={COLORS.control} />
+                  <ErrorBar dataKey="errCtrl" width={6} strokeWidth={2} stroke="#a1a1aa" />
                 </Bar>
                 <Bar dataKey="Intervention" fill={COLORS.intervention} radius={[4,4,0,0]}>
-                  <ErrorBar dataKey="errIntr" width={4} strokeWidth={2} stroke={COLORS.intervention} />
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-            {/* Parametre */}
-            <p className="text-xs text-zinc-500 mt-3 mb-1">Parametre (0–2)</p>
-            <ResponsiveContainer width="100%" height={130}>
-              <BarChart
-                data={["A1","A2","A3","B1"].map(p => {
-                  const s = codingStats?.params?.find((x:any) => x.param === p);
-                  return { name: p, Control: s?.controlMean??0, Intervention: s?.interventionMean??0, errCtrl: s?.controlSem??0, errIntr: s?.interventionSem??0 };
-                })}
-                barGap={4} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                <XAxis dataKey="name" tick={{ fill: "#a1a1aa", fontSize: 11 }} />
-                <YAxis domain={[0, 2]} ticks={[0,1,2]} tick={{ fill: "#a1a1aa", fontSize: 11 }} />
-                <Tooltip formatter={tooltipFmt} contentStyle={{ background: "#18181b", border: "1px solid #3f3f46" }} />
-                <Bar dataKey="Control" fill={COLORS.control} radius={[4,4,0,0]}>
-                  <ErrorBar dataKey="errCtrl" width={4} strokeWidth={2} stroke={COLORS.control} />
-                </Bar>
-                <Bar dataKey="Intervention" fill={COLORS.intervention} radius={[4,4,0,0]}>
-                  <ErrorBar dataKey="errIntr" width={4} strokeWidth={2} stroke={COLORS.intervention} />
+                  <ErrorBar dataKey="errIntr" width={6} strokeWidth={2} stroke="#a1a1aa" />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -466,6 +442,35 @@ export default function Dashboard() {
               <span><span className="inline-block w-2 h-2 rounded-sm bg-zinc-500 mr-1" />Control</span>
               <span><span className="inline-block w-2 h-2 rounded-sm bg-blue-500 mr-1" />Intervention</span>
             </div>
+          </div>
+        </div>
+
+        {/* Bottom row: params barplot full width */}
+        <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
+          <p className="text-xs text-zinc-400 mb-1">Parametre (M ± SE, skala 0–2)</p>
+          {codingStats && <StatRow cmp={codingStats.a1Cmp} />}
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart
+              data={["A1","A2","A3","B1"].map(p => {
+                const s = codingStats?.params?.find((x:any) => x.param === p);
+                return { name: p, Control: s?.controlMean??0, Intervention: s?.interventionMean??0, errCtrl: s?.controlSem??0, errIntr: s?.interventionSem??0 };
+              })}
+              barGap={4} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+              <XAxis dataKey="name" tick={{ fill: "#a1a1aa", fontSize: 11 }} />
+              <YAxis domain={[0, 2]} ticks={[0,1,2]} tick={{ fill: "#a1a1aa", fontSize: 11 }} />
+              <Tooltip formatter={tooltipFmt} contentStyle={{ background: "#18181b", border: "1px solid #3f3f46" }} />
+              <Bar dataKey="Control" fill={COLORS.control} radius={[4,4,0,0]}>
+                <ErrorBar dataKey="errCtrl" width={6} strokeWidth={2} stroke="#a1a1aa" />
+              </Bar>
+              <Bar dataKey="Intervention" fill={COLORS.intervention} radius={[4,4,0,0]}>
+                <ErrorBar dataKey="errIntr" width={6} strokeWidth={2} stroke="#a1a1aa" />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+          <div className="flex gap-4 mt-2 text-xs text-zinc-500">
+            <span><span className="inline-block w-2 h-2 rounded-sm bg-zinc-500 mr-1" />Control</span>
+            <span><span className="inline-block w-2 h-2 rounded-sm bg-blue-500 mr-1" />Intervention</span>
           </div>
         </div>
 
@@ -526,8 +531,12 @@ export default function Dashboard() {
               <XAxis dataKey="name" tick={{ fill: "#a1a1aa", fontSize: 11 }} />
               <YAxis domain={[0, 6]} tick={{ fill: "#a1a1aa", fontSize: 12 }} />
               <Tooltip formatter={tooltipFmt} contentStyle={{ background: "#18181b", border: "1px solid #3f3f46" }} />
-              <Bar dataKey="Control" fill={COLORS.control} radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Intervention" fill={COLORS.intervention} radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Control" fill={COLORS.control} radius={[4, 4, 0, 0]}>
+                <ErrorBar dataKey="errCtrl" width={4} strokeWidth={2} stroke="#a1a1aa" />
+              </Bar>
+              <Bar dataKey="Intervention" fill={COLORS.intervention} radius={[4, 4, 0, 0]}>
+                <ErrorBar dataKey="errIntr" width={4} strokeWidth={2} stroke="#a1a1aa" />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
           <div className="grid grid-cols-2 gap-x-6 gap-y-1 mt-3">

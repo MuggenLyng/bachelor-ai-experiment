@@ -134,9 +134,13 @@ export async function GET() {
         posttestMean: mean(post), posttestSem: sem(post),
         gainMean: mean(gain),     gainSem: sem(gain),
         perceivedLearning1Mean: mean(rows.map((r) => r.perceivedLearning1)),
+        perceivedLearning1Sem:  sem(rows.map((r) => r.perceivedLearning1)),
         easeOfConversating1Mean: mean(rows.map((r) => r.easeOfConversating1)),
+        easeOfConversating1Sem:  sem(rows.map((r) => r.easeOfConversating1)),
         adaptingToNeeds1Mean: mean(rows.map((r) => r.adaptingToNeeds1)),
+        adaptingToNeeds1Sem:  sem(rows.map((r) => r.adaptingToNeeds1)),
         mentalEffortMean: mean(rows.map((r) => r.mentalEffort)),
+        mentalEffortSem:  sem(rows.map((r) => r.mentalEffort)),
         evtMean: mean(rows.map((r) =>
           r.evt1 !== null && r.evt2 !== null && r.evt3 !== null
             ? (r.evt1 + r.evt2 + r.evt3) / 3 : null
