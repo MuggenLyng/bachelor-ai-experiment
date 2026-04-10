@@ -621,14 +621,23 @@ export default function Dashboard() {
               <ResponsiveContainer width="100%" height={150}>
                 <PieChart>
                   <Pie data={genderData} dataKey="value" nameKey="name" cx="50%" cy="50%"
-                    outerRadius={55}
-                    label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
-                    labelLine={false} fontSize={11}
+                    outerRadius={55} label={false} labelLine={false}
                     isAnimationActive={false}>
                     {genderData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
                   </Pie>
                 </PieChart>
               </ResponsiveContainer>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
+                {genderData.map((d, i) => {
+                  const total = genderData.reduce((s, x) => s + x.value, 0);
+                  return (
+                    <span key={d.name} className="flex items-center gap-1 text-xs text-zinc-400">
+                      <span className="inline-block w-2 h-2 rounded-sm" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
+                      {d.name} {total ? Math.round(d.value / total * 100) : 0}%
+                    </span>
+                  );
+                })}
+              </div>
             ) : <p className="text-xs text-zinc-500">Ingen data endnu.</p>}
           </div>
         </div>
