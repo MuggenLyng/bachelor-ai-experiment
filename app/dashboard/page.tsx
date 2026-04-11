@@ -293,7 +293,7 @@ export default function Dashboard() {
   if (loading) return <div className="p-10 text-zinc-400">Henter data...</div>;
   if (!data) return <div className="p-10 text-red-400">Fejl ved hentning af data.</div>;
 
-  const { nTotal, nCompleted, nDropouts, nFollowUp, groupStats, comparisons: cmp, demographics, deviceGain, deviceComparison, codingPoints, codingStats, lastUpdated } = data;
+  const { nTotal, nCompleted, nDropouts, nFollowUp, groupStats, comparisons: cmp, demographics, deviceGain, deviceComparison, codingPoints, codingStats, followUpCodingPoints, followUpCodingStats, lastUpdated } = data;
   const ctrl = groupStats.control;
   const intr = groupStats.intervention;
 
@@ -332,12 +332,6 @@ export default function Dashboard() {
             Opdateres hvert 30 sek · Sidst hentet: {new Date(lastUpdated).toLocaleTimeString("da-DK")}
           </p>
         </div>
-        <button
-          onClick={fetchData}
-          className="text-xs px-3 py-1.5 rounded-lg border border-zinc-700 text-zinc-300 hover:bg-zinc-800"
-        >
-          Opdater nu
-        </button>
       </div>
 
       {/* Deltagere — altid synlig */}
@@ -353,9 +347,10 @@ export default function Dashboard() {
         <p className="text-xs text-zinc-500">Dropouts: {nDropouts}</p>
       </section>
 
-      {/* Primær effekt */}
-      <Section title="Primær effekt">
+      {/* ── PRIMÆRE MÅL ─────────────────────────────────────────── */}
+      <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">Primære mål</h2>
 
+      <Section title="Fritekst scorene">
         {/* Top row: dotplot + total barplot side by side */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
@@ -502,7 +497,150 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* 3) MCQ */}
+      </Section>
+
+      {/* Follow-up fritekst */}
+      <Section title="Fritekst follow-up scorene">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Follow-up dotplot */}
+          <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
+            <p className="text-xs text-zinc-400 mb-1">Follow-up total score (0–8)</p>
+            {followUpCodingStats && <StatRow cmp={followUpCodingStats.totalCmp} />}
+            <ResponsiveContainer width="100%" height={280}>
+              <ScatterChart margin={{ top: 16, right: 16, bottom: 0, left: -10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                <XAxis dataKey="x" type="number" domain={[-0.5, 1.5]}
+                  ticks={[0, 1]} tickFormatter={(v: number) => v === 0 ? "Control" : "Interv."}
+                  tick={{ fill: "#a1a1aa", fontSize: 11 }} />
+                <YAxis dataKey="y" domain={[0, 8]} ticks={[0,2,4,6,8]} tick={{ fill: "#a1a1aa", fontSize: 11 }} />
+                <Tooltip cursor={false} content={({ payload }) => {
+                  if (!payload?.length) return null;
+                  const d = payload[0].payload;
+                  if (d.isMean) return null;
+                  return <div className="bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-200">{d.group}: {d.y}</div>;
+                }} />
+                {(() => {
+                  const groups = (["control","intervention"] as const).map((grp, gi) => {
+                    const pts = (followUpCodingPoints ?? []).filter((p: any) => p.group === grp);
+                    const vals = pts.map((p: any) => p.total as number).filter((v: number) => v !== null);
+                    const mn = vals.length ? vals.reduce((a: number,b: number)=>a+b,0)/vals.length : null;
+                    const semV = vals.length > 1
+                      ? Math.sqrt(vals.reduce((a:number,b:number)=>a+(b-mn!)*(b-mn!),0)/(vals.length-1)) / Math.sqrt(vals.length)
+                      : 0;
+                    const color = COLORS[grp];
+                    const dots = pts.map((p: any, i: number) => ({
+                      x: gi + (((i * 7919) % 100) / 100 - 0.5) * 0.18,
+                      y: p.total, group: grp, isMean: false,
+                    }));
+                    const meanPt = mn !== null ? [{ x: gi, y: mn, err: semV, isMean: true }] : [];
+                    return { grp, color, dots, meanPt };
+                  });
+                  return [
+                    ...groups.map(({ grp, color, dots }) => (
+                      <Scatter key={`fu-${grp}-dots`} data={dots} fill={color} opacity={0.75} />
+                    )),
+                    ...groups.map(({ grp, color, meanPt }) => (
+                      <Scatter key={`fu-${grp}-mean`} data={meanPt} fill={color} legendType="none"
+                        shape={(props: any) => {
+                          const { cx, cy, yAxis, payload } = props;
+                          const scale = yAxis?.scale;
+                          const err = payload?.err ?? 0;
+                          const y1 = scale ? scale(payload.y + err) : cy - 12;
+                          const y2 = scale ? scale(payload.y - err) : cy + 12;
+                          return (
+                            <g>
+                              <line x1={cx} y1={y1} x2={cx} y2={y2} stroke="#a1a1aa" strokeWidth={2} />
+                              <line x1={cx-8} y1={y1} x2={cx+8} y2={y1} stroke="#a1a1aa" strokeWidth={2} />
+                              <line x1={cx-8} y1={y2} x2={cx+8} y2={y2} stroke="#a1a1aa" strokeWidth={2} />
+                              <line x1={cx-22} y1={cy} x2={cx+22} y2={cy} stroke={color} strokeWidth={3} strokeLinecap="round" />
+                            </g>
+                          );
+                        }} />
+                    )),
+                  ];
+                })()}
+              </ScatterChart>
+            </ResponsiveContainer>
+            <div className="flex gap-3 mt-2 text-xs text-zinc-400">
+              {(["control","intervention"] as const).map(grp => {
+                const p = followUpCodingStats?.params?.find((p: any) => p.param === "total");
+                const m = grp === "control" ? p?.controlMean : p?.interventionMean;
+                const se = grp === "control" ? p?.controlSem : p?.interventionSem;
+                return <span key={grp}><span className="inline-block w-2 h-2 rounded-sm mr-1" style={{background: COLORS[grp]}} />{grp === "control" ? "Ctrl" : "Intr"} M={fmt(m??null)} ±{fmt(se??null)}</span>;
+              })}
+            </div>
+          </div>
+
+          {/* Follow-up total barplot */}
+          <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
+            <p className="text-xs text-zinc-400 mb-1">Total score (M ± SE)</p>
+            {followUpCodingStats && <StatRow cmp={followUpCodingStats.totalCmp} />}
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart
+                data={(() => {
+                  const t = followUpCodingStats?.params?.find((x:any)=>x.param==="total");
+                  return [
+                    { name: "Control",      value: t?.controlMean??0,     err: t?.controlSem??0,     fill: COLORS.control },
+                    { name: "Intervention", value: t?.interventionMean??0, err: t?.interventionSem??0, fill: COLORS.intervention },
+                  ];
+                })()}
+                barGap={8} margin={{ top: 16, right: 16, bottom: 0, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                <XAxis dataKey="name" tick={{ fill: "#a1a1aa", fontSize: 11 }} />
+                <YAxis domain={[0, 8]} ticks={[0,2,4,6,8]} tick={{ fill: "#a1a1aa", fontSize: 11 }} />
+                <Tooltip contentStyle={{ background: "#18181b", border: "1px solid #3f3f46" }}
+                  content={({ payload }) => {
+                    if (!payload?.length) return null;
+                    const d = payload[0].payload;
+                    return (
+                      <div style={{ background: "#18181b", border: "1px solid #3f3f46", borderRadius: 6, padding: "6px 10px", fontSize: 12 }}>
+                        <span style={{ color: d.fill, fontWeight: 600 }}>{d.name}</span>
+                        <span style={{ color: "#e4e4e7" }}>{": "}{typeof d.value === "number" ? d.value.toFixed(2) : d.value}</span>
+                      </div>
+                    );
+                  }} />
+                <Bar dataKey="value" radius={[4,4,0,0]}>
+                  {[COLORS.control, COLORS.intervention].map((fill, i) => <Cell key={i} fill={fill} />)}
+                  <ErrorBar dataKey="err" width={6} strokeWidth={2} stroke="#a1a1aa" />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Follow-up parametre */}
+        <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
+          <p className="text-xs text-zinc-400 mb-1">Parametre (M ± SE, skala 0–2)</p>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart
+              data={[
+                ["A1","Energibalance"],["A2","Kompensation"],["A3","Konsekvens"],["B1","Løsning"],
+              ].map(([p, label]) => {
+                const s = followUpCodingStats?.params?.find((x:any) => x.param === p);
+                return { name: label, Control: s?.controlMean??0, Intervention: s?.interventionMean??0, errCtrl: s?.controlSem??0, errIntr: s?.interventionSem??0 };
+              })}
+              barGap={4} margin={{ top: 8, right: 16, bottom: 36, left: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+              <XAxis dataKey="name" tick={{ fill: "#a1a1aa", fontSize: 11 }} angle={-20} textAnchor="end" interval={0} />
+              <YAxis domain={[0, 2]} ticks={[0,1,2]} tick={{ fill: "#a1a1aa", fontSize: 11 }} />
+              <Tooltip formatter={tooltipFmt} contentStyle={{ background: "#18181b", border: "1px solid #3f3f46" }} />
+              <Bar dataKey="Control" fill={COLORS.control} radius={[4,4,0,0]}>
+                <ErrorBar dataKey="errCtrl" width={6} strokeWidth={2} stroke="#a1a1aa" />
+              </Bar>
+              <Bar dataKey="Intervention" fill={COLORS.intervention} radius={[4,4,0,0]}>
+                <ErrorBar dataKey="errIntr" width={6} strokeWidth={2} stroke="#a1a1aa" />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+          <div className="flex gap-4 mt-2 text-xs text-zinc-500">
+            <span><span className="inline-block w-2 h-2 rounded-sm bg-zinc-500 mr-1" />Control</span>
+            <span><span className="inline-block w-2 h-2 rounded-sm bg-blue-500 mr-1" />Intervention</span>
+          </div>
+        </div>
+      </Section>
+
+      {/* MCQ */}
+      <Section title="MCQ">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
             <p className="text-xs text-zinc-400 mb-3">Gennemsnitlig score: pre vs. post MCQ</p>
@@ -521,7 +659,6 @@ export default function Dashboard() {
               <span><span className="inline-block w-2 h-2 rounded-sm bg-blue-500 mr-1" />Intervention: pre {fmt(intr.pretestMean)} → post {fmt(intr.posttestMean)}</span>
             </div>
           </div>
-
           <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
             <p className="text-xs text-zinc-400 mb-3">Learning gain (posttest − pretest)</p>
             <ResponsiveContainer width="100%" height={200}>
@@ -532,9 +669,7 @@ export default function Dashboard() {
                 <Tooltip formatter={tooltipFmt} contentStyle={{ background: "#18181b", border: "1px solid #3f3f46", color: "#f4f4f5" }} itemStyle={{ color: "#f4f4f5" }} />
                 <ReferenceLine y={0} stroke="#52525b" />
                 <Bar dataKey="gain" radius={[4, 4, 0, 0]}>
-                  {gainData.map((entry, i) => (
-                    <rect key={i} fill={entry.fill} />
-                  ))}
+                  {gainData.map((entry, i) => (<rect key={i} fill={entry.fill} />))}
                   <ErrorBar dataKey="err" width={4} strokeWidth={2} stroke="#a1a1aa" />
                 </Bar>
               </BarChart>
@@ -549,8 +684,11 @@ export default function Dashboard() {
         </div>
       </Section>
 
-      {/* Sekundære effekter */}
-      <Section title="Sekundære effekter" defaultOpen={false}>
+      {/* ── SEKUNDÆRE MÅL ───────────────────────────────────────── */}
+      <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">Sekundære mål</h2>
+
+      {/* Oplevelse af chatbot */}
+      <Section title="Oplevelse af chatbot" defaultOpen={false}>
         <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
           <p className="text-xs text-zinc-400 mb-3">Skala 1–6</p>
           <ResponsiveContainer width="100%" height={220}>

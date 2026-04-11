@@ -97,6 +97,7 @@ export async function GET() {
         deviceType: true, age: true, gender: true, education: true,
         createdAt: true, followUpCompleted: true,
         codeA1: true, codeA2: true, codeA3: true, codeB1: true, codeTotal: true,
+        followUpCodeA1: true, followUpCodeA2: true, followUpCodeA3: true, followUpCodeB1: true, followUpCodeTotal: true,
       },
     });
 
@@ -258,6 +259,44 @@ export async function GET() {
       ),
     };
 
+    // ── Follow-up fritekst kodning ────────────────────────────────────────────
+    const fuCoded = all.filter(r => r.followUpCodeTotal !== null);
+    const followUpCodingPoints = fuCoded.map(r => ({
+      group: r.group,
+      total: r.followUpCodeTotal,
+      A1: r.followUpCodeA1, A2: r.followUpCodeA2, A3: r.followUpCodeA3, B1: r.followUpCodeB1,
+    }));
+
+    function fuMean(grp: string, key: "followUpCodeA1"|"followUpCodeA2"|"followUpCodeA3"|"followUpCodeB1"|"followUpCodeTotal") {
+      const vals = nn(fuCoded.filter(r => r.group === grp).map(r => r[key]));
+      return vals.length ? +(vals.reduce((a,b) => a+b, 0) / vals.length).toFixed(3) : null;
+    }
+    function fuSem(grp: string, key: "followUpCodeA1"|"followUpCodeA2"|"followUpCodeA3"|"followUpCodeB1"|"followUpCodeTotal") {
+      const vals = nn(fuCoded.filter(r => r.group === grp).map(r => r[key]));
+      if (vals.length < 2) return null;
+      const m = vals.reduce((a,b)=>a+b,0)/vals.length;
+      const sd = Math.sqrt(vals.reduce((a,b)=>a+(b-m)**2,0)/(vals.length-1));
+      return +(sd/Math.sqrt(vals.length)).toFixed(3);
+    }
+
+    const followUpCodingStats = {
+      nCoded: fuCoded.length,
+      params: ["A1","A2","A3","B1","total"].map(p => {
+        const key = (p === "total" ? "followUpCodeTotal" : `followUpCode${p}`) as "followUpCodeA1"|"followUpCodeA2"|"followUpCodeA3"|"followUpCodeB1"|"followUpCodeTotal";
+        return {
+          param: p,
+          controlMean: fuMean("control", key),
+          controlSem:  fuSem("control", key),
+          interventionMean: fuMean("intervention", key),
+          interventionSem:  fuSem("intervention", key),
+        };
+      }),
+      totalCmp: welchTest(
+        nn(fuCoded.filter(r=>r.group==="control").map(r=>r.followUpCodeTotal)),
+        nn(fuCoded.filter(r=>r.group==="intervention").map(r=>r.followUpCodeTotal)),
+      ),
+    };
+
     return NextResponse.json({
       nTotal: all.length, nCompleted: completed.length, nDropouts: dropouts.length,
       nFollowUp,
@@ -265,6 +304,7 @@ export async function GET() {
       demographics: { ageMean, genderCounts, eduCounts },
       deviceGain, deviceComparison,
       codingPoints, codingStats,
+      followUpCodingPoints, followUpCodingStats,
       lastUpdated: new Date().toISOString(),
     });
   } catch (err: any) {

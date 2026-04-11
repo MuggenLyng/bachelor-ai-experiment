@@ -139,7 +139,9 @@ function FollowUpExperiment() {
               onChange={(e) => setFreeText(e.target.value)}
               placeholder={tx.placeholder}
             />
-            <p className="text-xs text-zinc-400">{tx.charCount(freeTextCharCount)}</p>
+            <p className={`text-xs font-medium ${freeTextCharCount >= 250 ? "text-green-400" : "text-zinc-400"}`}>
+              {tx.charCount(freeTextCharCount)}{freeTextCharCount < 250 ? ` — skriv mindst ${250 - freeTextCharCount} tegn mere` : " ✓"}
+            </p>
             <div className="flex justify-end">
               <button
                 className="rounded-lg bg-zinc-700 text-white px-4 py-2 disabled:opacity-40"
@@ -158,12 +160,23 @@ function FollowUpExperiment() {
             <h2 className="text-2xl font-bold text-zinc-50 text-center">{tx.doneTitle}</h2>
             <p className="text-base text-zinc-200 leading-relaxed">{tx.doneText}</p>
             <p className="text-base text-zinc-200 leading-relaxed">
-              {tx.doneDrawText.replace(tx.doneHighlight, "")}
+              {tx.doneDrawText.split(tx.doneHighlight)[0]}
               <span className="font-medium text-green-400">{tx.doneHighlight}</span>
               {tx.doneDrawText.split(tx.doneHighlight)[1]}
             </p>
             <p className="text-sm text-zinc-400">{tx.doneSignoff}</p>
             <p className="text-sm text-zinc-400 italic whitespace-pre-line">{tx.doneContact}</p>
+            <div className="mt-2 pt-4 border-t border-zinc-700 text-center space-y-2">
+              <p className="text-sm text-zinc-400">Vil du følge med i resultaterne efterhånden som de kommer ind?</p>
+              <a
+                href="https://bachelor-ai-experiment.vercel.app/dashboard"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block px-4 py-2 rounded-lg bg-zinc-800 border border-zinc-600 text-zinc-200 text-sm hover:bg-zinc-700 transition-colors"
+              >
+                📊 Følg med i dataen live →
+              </a>
+            </div>
           </section>
         )}
       </div>
