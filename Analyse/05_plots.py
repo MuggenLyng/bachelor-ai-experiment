@@ -330,6 +330,122 @@ def run():
         print("  Gemt → plots/08_fritekst_dotplot.png, plots/09_fritekst_params.png")
 
     # =========================================================
+    # 12 + 13) FOLLOW-UP FRITEKST KODNING
+    # =========================================================
+    fu_code_cols = ["followUpCodeA1", "followUpCodeA2", "followUpCodeA3", "followUpCodeB1", "followUpCodeTotal"]
+    if all(c in df.columns for c in fu_code_cols):
+        from scipy.stats import ttest_ind, sem as scipy_sem
+        fu_coded = df[df["followUpCodeTotal"].notna()].copy()
+
+        if len(fu_coded) >= 2:
+            # 12) Dotplot — follow-up total score
+            fig, ax = plt.subplots(figsize=(6, 5))
+            for xi, (grp, color) in enumerate(COLORS.items()):
+                sub = fu_coded[fu_coded["group"] == grp]["followUpCodeTotal"].dropna().values
+                if len(sub) == 0:
+                    continue
+                rng = np.random.default_rng(42)
+                jitter = rng.uniform(-0.12, 0.12, size=len(sub))
+                ax.scatter(xi + jitter, sub, color=color, alpha=0.7,
+                           edgecolors="white", linewidth=0.6, s=60, zorder=3)
+                if len(sub) >= 1:
+                    m = sub.mean()
+                    ax.plot([xi - 0.22, xi + 0.22], [m, m], color=color,
+                            linewidth=2.5, zorder=4)
+                if len(sub) >= 2:
+                    se = scipy_sem(sub)
+                    ax.plot([xi, xi], [m - se, m + se], color=color, linewidth=2, zorder=4)
+                    ax.plot([xi - 0.08, xi + 0.08], [m - se, m - se], color=color, linewidth=1.5, zorder=4)
+                    ax.plot([xi - 0.08, xi + 0.08], [m + se, m + se], color=color, linewidth=1.5, zorder=4)
+
+            ctrl_fu = fu_coded[fu_coded["group"] == "control"]["followUpCodeTotal"].dropna()
+            intr_fu = fu_coded[fu_coded["group"] == "intervention"]["followUpCodeTotal"].dropna()
+            if len(ctrl_fu) >= 2 and len(intr_fu) >= 2:
+                t_fu, p_fu = ttest_ind(intr_fu, ctrl_fu, equal_var=False)
+                ps_fu = ((ctrl_fu.std()**2 + intr_fu.std()**2) / 2) ** 0.5
+                d_fu = (intr_fu.mean() - ctrl_fu.mean()) / ps_fu if ps_fu > 0 else 0
+                sig_str = "p < .05 *" if p_fu < 0.05 else f"p = {p_fu:.3f}"
+                title_stat = f"Δ = {intr_fu.mean()-ctrl_fu.mean():+.2f}, d = {d_fu:.2f}, {sig_str}"
+            else:
+                title_stat = f"N={len(fu_coded)} (for få til test)"
+
+            ax.set_title(f"Follow-up fritekst total score per deltager\n{title_stat}")
+            ax.set_xticks([0, 1])
+            ax.set_xticklabels(["Control\n(standard AI)", "Intervention\n(pæd.-psyk. AI)"])
+            ax.set_ylabel("Total score (A1+A2+A3+B1, max 8)")
+            ax.set_ylim(-0.3, 8.5)
+            ax.set_yticks(range(9))
+            plt.tight_layout()
+            plt.savefig("plots/12_followup_dotplot.png", dpi=150)
+            plt.close()
+
+            # 13) Barplot — per parameter + total
+            fu_params = ["followUpCodeA1", "followUpCodeA2", "followUpCodeA3", "followUpCodeB1"]
+            param_labels = ["A1\nEnergibalance", "A2\nKompensation", "A3\nKonsekvens", "B1\nLøsning"]
+            width = 0.35
+
+            fig, (ax_params, ax_total) = plt.subplots(
+                1, 2, figsize=(11, 5),
+                gridspec_kw={"width_ratios": [4, 1.2]}
+            )
+
+            x = np.arange(len(fu_params))
+            for i, (grp, color) in enumerate(COLORS.items()):
+                sub = fu_coded[fu_coded["group"] == grp]
+                means = [sub[c].mean() for c in fu_params]
+                sems  = [scipy_sem(sub[c].dropna()) if len(sub[c].dropna()) >= 2 else 0 for c in fu_params]
+                offset = (i - 0.5) * width
+                ax_params.bar(x + offset, means, width, label=grp.capitalize(),
+                              color=color, alpha=0.85, yerr=sems,
+                              capsize=4, error_kw={"linewidth": 1.2})
+
+            ax_params.set_xticks(x)
+            ax_params.set_xticklabels(param_labels)
+            ax_params.set_ylabel("Gennemsnit score (0–2)")
+            ax_params.set_ylim(0, 2.3)
+            ax_params.set_yticks([0, 0.5, 1.0, 1.5, 2.0])
+            ax_params.legend()
+            ax_params.set_title("Per parameter (M ± SE)")
+
+            for i, (grp, color) in enumerate(COLORS.items()):
+                sub = fu_coded[fu_coded["group"] == grp]["followUpCodeTotal"].dropna()
+                if len(sub) == 0:
+                    continue
+                offset = (i - 0.5) * width
+                yerr = scipy_sem(sub) if len(sub) >= 2 else 0
+                ax_total.bar(offset, sub.mean(), width, label=grp.capitalize(),
+                             color=color, alpha=0.85, yerr=yerr,
+                             capsize=4, error_kw={"linewidth": 1.2})
+
+            if len(ctrl_fu) >= 2 and len(intr_fu) >= 2:
+                ps_t = ((ctrl_fu.std()**2 + intr_fu.std()**2) / 2) ** 0.5
+                d_t = (intr_fu.mean() - ctrl_fu.mean()) / ps_t if ps_t > 0 else 0
+                _, pp_t = ttest_ind(intr_fu, ctrl_fu, equal_var=False)
+                ymax_t = max(ctrl_fu.mean() + scipy_sem(ctrl_fu), intr_fu.mean() + scipy_sem(intr_fu))
+                sig_lbl = "*" if pp_t < 0.05 else f"p={pp_t:.2f}"
+                ax_total.text(0, ymax_t + 0.3, sig_lbl, ha="center",
+                              fontsize=12 if pp_t < 0.05 else 9, color="black")
+                ax_total.set_title(f"Total (d={d_t:.2f})")
+            else:
+                ax_total.set_title("Total")
+
+            ax_total.set_xticks([0])
+            ax_total.set_xticklabels(["Total\n(max 8)"])
+            ax_total.set_ylabel("Gennemsnit score (0–8)")
+            ax_total.set_ylim(0, 8.5)
+            ax_total.set_yticks([0, 2, 4, 6, 8])
+
+            plt.suptitle(f"Follow-up fritekst kodning per gruppe (N={len(fu_coded)}, M ± SE)  |  * = p < .05",
+                         y=1.02)
+            plt.tight_layout()
+            plt.savefig("plots/13_followup_params.png", dpi=150, bbox_inches="tight")
+            plt.close()
+
+            print(f"  Gemt → plots/12_followup_dotplot.png, plots/13_followup_params.png  (N={len(fu_coded)})")
+        else:
+            print(f"  Follow-up kodning: kun N={len(fu_coded)} — springer plot over")
+
+    # =========================================================
     # 10) Total testtid — histogram + KDE per gruppe
     # =========================================================
     if "total_duration_min" in df.columns:
