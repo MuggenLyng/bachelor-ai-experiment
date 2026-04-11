@@ -329,6 +329,53 @@ def run():
 
         print("  Gemt → plots/08_fritekst_dotplot.png, plots/09_fritekst_params.png")
 
+    # =========================================================
+    # 10) Total testtid — histogram + KDE per gruppe
+    # =========================================================
+    if "total_duration_min" in df.columns:
+        from scipy import stats as scipy_stats
+
+        dur = df["total_duration_min"].dropna()
+        # Fjern ekstreme outliers (>120 min — sandsynligvis afbrudt og genoptaget)
+        dur_clean = dur[dur <= 120]
+        n_outliers = len(dur) - len(dur_clean)
+
+        fig, ax = plt.subplots(figsize=(9, 5))
+
+        for grp, color in COLORS.items():
+            sub = df[(df["group"] == grp) & df["total_duration_min"].notna()]
+            sub = sub[sub["total_duration_min"] <= 120]["total_duration_min"]
+            ax.hist(sub, bins=15, alpha=0.35, color=color, label=f"{grp.capitalize()} (N={len(sub)})",
+                    density=True)
+            if len(sub) > 5:
+                kde = scipy_stats.gaussian_kde(sub, bw_method="scott")
+                xs = np.linspace(0, 120, 300)
+                ax.plot(xs, kde(xs), color=color, linewidth=2)
+                ax.axvline(sub.mean(), color=color, linestyle="--", linewidth=1.5,
+                           label=f"  M={sub.mean():.1f} min")
+
+        # Normalfordelingstest (Shapiro-Wilk på alle)
+        if len(dur_clean) >= 3:
+            stat_sw, p_sw = scipy_stats.shapiro(dur_clean)
+            sw_txt = f"Shapiro-Wilk: W={stat_sw:.3f}, p={p_sw:.3f}"
+            norm_txt = "≈ normalfordelt" if p_sw > 0.05 else "ikke normalfordelt (skæv)"
+            ax.text(0.98, 0.97, f"{sw_txt}\n{norm_txt}",
+                    transform=ax.transAxes, ha="right", va="top",
+                    fontsize=9, color="#444",
+                    bbox=dict(boxstyle="round,pad=0.3", fc="white", alpha=0.7))
+
+        ax.set_xlabel("Total tid (minutter)")
+        ax.set_ylabel("Tæthed")
+        title = f"Samlet testtid per deltager  (createdAt → updatedAt)"
+        if n_outliers:
+            title += f"\n({n_outliers} outlier(s) >120 min ekskluderet fra plot)"
+        ax.set_title(title)
+        ax.legend()
+        plt.tight_layout()
+        plt.savefig("plots/10_total_duration.png", dpi=150, bbox_inches="tight")
+        plt.close()
+        print("  Gemt → plots/10_total_duration.png")
+
     print(f"  Gemt → plots/")
 
 if __name__ == "__main__":

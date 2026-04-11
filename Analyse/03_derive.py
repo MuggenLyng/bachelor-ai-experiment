@@ -21,6 +21,11 @@ def run():
     # --- Fritekst ---
     df["has_freetext"] = df["freeTextResponse"].notna() & (df["freeTextWordCount"].fillna(0) > 0)
 
+    # --- Total testtid (createdAt → updatedAt) ---
+    df["createdAt"] = pd.to_datetime(df["createdAt"], utc=True)
+    df["updatedAt"] = pd.to_datetime(df["updatedAt"], utc=True)
+    df["total_duration_min"] = (df["updatedAt"] - df["createdAt"]).dt.total_seconds() / 60
+
     # --- Follow-up ---
     df["has_followup"] = df["followUpCompleted"] == True
 
