@@ -144,7 +144,7 @@ export default function Home() {
       return;
     }
 
-    const newGroup: Group = Math.random() < 0.5 ? "control" : "intervention";
+    const newGroup: Group = Math.random() < 0.7 ? "control" : "intervention"; // Adaptive: temporarily increased to 70% control (was 50%) to correct imbalance (n_ctrl=23, n_intr=33 observed 2026-04-11)
     const newId = generateUUID();
 
     localStorage.setItem("group", newGroup);
