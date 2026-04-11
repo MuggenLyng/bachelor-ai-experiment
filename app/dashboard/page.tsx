@@ -348,7 +348,7 @@ export default function Dashboard() {
       </section>
 
       {/* ── PRIMÆRE MÅL ─────────────────────────────────────────── */}
-      <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">Primære mål</h2>
+      <h2 className="text-xl font-bold text-zinc-100 text-center">Primære mål</h2>
 
       <Section title="Fritekst scorene">
         {/* Top row: dotplot + total barplot side by side */}
@@ -500,7 +500,7 @@ export default function Dashboard() {
       </Section>
 
       {/* Follow-up fritekst */}
-      <Section title="Fritekst follow-up scorene">
+      <Section title="Fritekst follow-up scorene" defaultOpen={false}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Follow-up dotplot */}
           <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
@@ -685,7 +685,7 @@ export default function Dashboard() {
       </Section>
 
       {/* ── SEKUNDÆRE MÅL ───────────────────────────────────────── */}
-      <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">Sekundære mål</h2>
+      <h2 className="text-xl font-bold text-zinc-100 text-center">Sekundære mål</h2>
 
       {/* Oplevelse af chatbot */}
       <Section title="Oplevelse af chatbot" defaultOpen={false}>
