@@ -95,7 +95,7 @@ export async function GET() {
         freeTextWordCount: true, chatMessageCount: true,
         userMessageCount: true, assistantMessageCount: true,
         deviceType: true, age: true, gender: true, education: true,
-        createdAt: true, followUpCompleted: true,
+        createdAt: true, followUpCompleted: true, followUpFreeTextWordCount: true,
         codeA1: true, codeA2: true, codeA3: true, codeB1: true, codeTotal: true,
         followUpCodeA1: true, followUpCodeA2: true, followUpCodeA3: true, followUpCodeB1: true, followUpCodeTotal: true,
       },
@@ -148,9 +148,10 @@ export async function GET() {
         )),
         readingTimeSec:  rows.map((r) => r.readingTime  !== null ? r.readingTime  / 1000      : null),
         chatDurationMin: rows.map((r) => r.chatDuration !== null ? r.chatDuration / 1000 / 60 : null),
-        freeTextChars:   rows.map((r) => r.freeTextWordCount),
-        chatMessages:    rows.map((r) => r.chatMessageCount),
-        ageValues:       rows.map((r) => r.age),
+        freeTextChars:         rows.map((r) => r.freeTextWordCount),
+        followUpFreeTextChars: rows.map((r) => r.followUpFreeTextWordCount),
+        chatMessages:          rows.map((r) => r.chatMessageCount),
+        ageValues:             rows.map((r) => r.age),
       }];
     }));
 

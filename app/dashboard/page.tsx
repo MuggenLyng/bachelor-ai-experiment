@@ -308,10 +308,10 @@ export default function Dashboard() {
   ];
 
   const secondaryData = [
-    { name: "Subj.",    Control: ctrl.perceivedLearning1Mean,  errCtrl: ctrl.perceivedLearning1Sem,  Intervention: intr.perceivedLearning1Mean,  errIntr: intr.perceivedLearning1Sem },
-    { name: "Samtale",  Control: ctrl.easeOfConversating1Mean, errCtrl: ctrl.easeOfConversating1Sem, Intervention: intr.easeOfConversating1Mean, errIntr: intr.easeOfConversating1Sem },
-    { name: "Tilpasn.", Control: ctrl.adaptingToNeeds1Mean,    errCtrl: ctrl.adaptingToNeeds1Sem,    Intervention: intr.adaptingToNeeds1Mean,    errIntr: intr.adaptingToNeeds1Sem },
-    { name: "Mental",   Control: ctrl.mentalEffortMean,        errCtrl: ctrl.mentalEffortSem,        Intervention: intr.mentalEffortMean,        errIntr: intr.mentalEffortSem },
+    { name: "Subjektiv læring",      Control: ctrl.perceivedLearning1Mean,  errCtrl: ctrl.perceivedLearning1Sem,  Intervention: intr.perceivedLearning1Mean,  errIntr: intr.perceivedLearning1Sem },
+    { name: "Nem at samtale",        Control: ctrl.easeOfConversating1Mean, errCtrl: ctrl.easeOfConversating1Sem, Intervention: intr.easeOfConversating1Mean, errIntr: intr.easeOfConversating1Sem },
+    { name: "Tilpasning til behov",  Control: ctrl.adaptingToNeeds1Mean,    errCtrl: ctrl.adaptingToNeeds1Sem,    Intervention: intr.adaptingToNeeds1Mean,    errIntr: intr.adaptingToNeeds1Sem },
+    { name: "Mental indsats",        Control: ctrl.mentalEffortMean,        errCtrl: ctrl.mentalEffortSem,        Intervention: intr.mentalEffortMean,        errIntr: intr.mentalEffortSem },
   ];
 
   const genderData = Object.entries(demographics.genderCounts as Record<string, number>).map(
@@ -691,10 +691,10 @@ export default function Dashboard() {
       <Section title="Oplevelse af chatbot" defaultOpen={false}>
         <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
           <p className="text-xs text-zinc-400 mb-3">Skala 1–6</p>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={secondaryData} barGap={4}>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={secondaryData} barGap={4} margin={{ top: 8, right: 16, bottom: 36, left: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-              <XAxis dataKey="name" tick={{ fill: "#a1a1aa", fontSize: 11 }} />
+              <XAxis dataKey="name" tick={{ fill: "#a1a1aa", fontSize: 11 }} angle={-20} textAnchor="end" interval={0} />
               <YAxis domain={[0, 6]} tick={{ fill: "#a1a1aa", fontSize: 12 }} />
               <Tooltip formatter={tooltipFmt} contentStyle={{ background: "#18181b", border: "1px solid #3f3f46" }} />
               <Bar dataKey="Control" fill={COLORS.control} radius={[4, 4, 0, 0]}>
@@ -723,24 +723,29 @@ export default function Dashboard() {
           <DistChart ctrl={ctrl.chatMessages} intr={intr.chatMessages} label="Antal chat-beskeder per deltager" xLabel="Beskeder" stats={cmp?.chatMessages} />
         </div>
 
-        {/* Device type × learning gain */}
-        <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4 space-y-3">
-          <p className="text-xs text-zinc-400">Enhedstype × learning gain</p>
-          <div className="flex flex-wrap gap-3">
-            {Object.entries(deviceGain ?? {}).sort((a: any, b: any) => b[1].n - a[1].n).map(([dt, s]: [string, any]) => (
-              <div key={dt} className="bg-zinc-800 rounded-lg px-3 py-2 min-w-[100px]">
-                <p className="text-xs text-zinc-500 capitalize">{dt}</p>
-                <p className="text-lg font-bold text-zinc-100">{s.mean !== null ? s.mean.toFixed(2) : "—"}</p>
-                <p className="text-xs text-zinc-500">N={s.n}</p>
-              </div>
-            ))}
-          </div>
-          {deviceComparison && (
-            <div className="pt-1">
-              <p className="text-xs text-zinc-500 mb-0.5">Mobile vs. desktop (Welch t-test)</p>
-              <StatRow cmp={deviceComparison} />
+        {/* Tegn skrevet followup + Enhedstype × learning gain — side by side on sm+ */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <DistChart ctrl={ctrl.followUpFreeTextChars} intr={intr.followUpFreeTextChars} label="Tegn skrevet (followup)" refLine={250} refLabel="Min. 250" xLabel="Tegn" />
+
+          {/* Device type × learning gain */}
+          <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4 space-y-3">
+            <p className="text-xs text-zinc-400">Enhedstype × learning gain</p>
+            <div className="flex flex-wrap gap-3">
+              {Object.entries(deviceGain ?? {}).sort((a: any, b: any) => b[1].n - a[1].n).map(([dt, s]: [string, any]) => (
+                <div key={dt} className="bg-zinc-800 rounded-lg px-3 py-2 min-w-[100px]">
+                  <p className="text-xs text-zinc-500 capitalize">{dt}</p>
+                  <p className="text-lg font-bold text-zinc-100">{s.mean !== null ? s.mean.toFixed(2) : "—"}</p>
+                  <p className="text-xs text-zinc-500">N={s.n}</p>
+                </div>
+              ))}
             </div>
-          )}
+            {deviceComparison && (
+              <div className="pt-1">
+                <p className="text-xs text-zinc-500 mb-0.5">Mobile vs. desktop (Welch t-test)</p>
+                <StatRow cmp={deviceComparison} />
+              </div>
+            )}
+          </div>
         </div>
       </Section>
 
