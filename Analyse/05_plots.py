@@ -65,19 +65,6 @@ def run():
     plt.savefig("plots/01_pre_post.png", dpi=150, bbox_inches="tight")
     plt.close()
 
-    # 2) Learning gain boxplot
-    fig, ax = plt.subplots(figsize=(5, 5))
-    sns.boxplot(data=df, x="group", y="learning_gain", palette=COLORS, ax=ax, width=0.5)
-    sns.stripplot(data=df, x="group", y="learning_gain", ax=ax, color="white",
-                  edgecolor="gray", linewidth=0.8, size=6, jitter=True)
-    ax.axhline(0, linestyle="--", color="gray", linewidth=1)
-    ax.set_xlabel("Gruppe")
-    ax.set_ylabel("Learning gain (posttest − pretest)")
-    ax.set_title("Learning gain per gruppe")
-    plt.tight_layout()
-    plt.savefig("plots/02_learning_gain.png", dpi=150)
-    plt.close()
-
     # 3) Subjektive mål (barplot med fejlmarginer)
     secondary_cols = {
         "perceivedLearning1":  "Subjektiv læring",
@@ -102,11 +89,21 @@ def run():
 
     # 4) Chat varighed vs. learning gain (scatterplot)
     if "chat_duration_min" in df.columns:
+        from scipy.stats import linregress
         fig, ax = plt.subplots(figsize=(6, 5))
+        sub_all = df.dropna(subset=["chat_duration_min", "learning_gain"])
         for grp, color in COLORS.items():
-            sub = df[df["group"] == grp].dropna(subset=["chat_duration_min", "learning_gain"])
+            sub = sub_all[sub_all["group"] == grp]
             ax.scatter(sub["chat_duration_min"], sub["learning_gain"],
                        label=grp.capitalize(), color=color, alpha=0.7)
+        if len(sub_all) > 2:
+            slope, intercept, r, p, _ = linregress(sub_all["chat_duration_min"], sub_all["learning_gain"])
+            x_range = np.linspace(sub_all["chat_duration_min"].min(), sub_all["chat_duration_min"].max(), 100)
+            ax.plot(x_range, slope * x_range + intercept, color="#f97316",
+                    linewidth=2, linestyle="--", label="Regression")
+            ax.text(0.97, 0.05, f"r = {r:.2f},  p = {p:.3f}",
+                    transform=ax.transAxes, ha="right", va="bottom", fontsize=10, color="#f97316",
+                    bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.7, edgecolor="#f97316"))
         ax.set_xlabel("Chat varighed (minutter)")
         ax.set_ylabel("Learning gain")
         ax.set_title("Chat varighed vs. learning gain")
@@ -176,7 +173,7 @@ def run():
     plt.savefig("plots/06_time_distributions.png", dpi=150, bbox_inches="tight")
     plt.close()
 
-    # 7) EVT → learning_gain OG posttest side om side
+    # 7) EVT → learning_gain, posttest, pretest + fritekst score
     from scipy.stats import linregress
     evt_targets = [
         ("learning_gain", "Learning gain (posttest − pretest)"),
@@ -184,8 +181,10 @@ def run():
         ("pretestScore",   "Pretest score (0–4)"),
     ]
     sub_base = df[["evt_mean", "learning_gain", "posttestScore", "pretestScore", "group"]].dropna()
+    has_code = "codeTotal" in df.columns
+    n_plots = 4 if has_code else 3
     if len(sub_base) > 5:
-        fig, axes = plt.subplots(1, 3, figsize=(17, 5))
+        fig, axes = plt.subplots(1, n_plots, figsize=(5.5 * n_plots, 5))
         for ax, (ycol, ylabel) in zip(axes, evt_targets):
             sub = sub_base[["evt_mean", ycol, "group"]].dropna()
             for grp, color in COLORS.items():
@@ -195,12 +194,36 @@ def run():
                            linewidth=0.6, zorder=5, alpha=0.9)
             slope, intercept, r, p, _ = linregress(sub["evt_mean"], sub[ycol])
             x_range = np.linspace(sub["evt_mean"].min(), sub["evt_mean"].max(), 100)
-            ax.plot(x_range, slope * x_range + intercept, color="white",
-                    linewidth=2, linestyle="--", zorder=4,
-                    label=f"Regression (r={r:.2f}, p={p:.3f})")
+            ax.plot(x_range, slope * x_range + intercept, color="#f97316",
+                    linewidth=2, linestyle="--", zorder=4, label="Regression")
             ax.set_xlabel("EVT score (motivation)")
             ax.set_ylabel(ylabel)
             ax.set_title(f"EVT → {ylabel.split('(')[0].strip()}")
+            ax.legend(fontsize=9)
+            ax.text(0.97, 0.05, f"r = {r:.2f},  p = {p:.3f}",
+                    transform=ax.transAxes, ha="right", va="bottom",
+                    fontsize=10, color="#f97316",
+                    bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.7, edgecolor="#f97316"))
+        if has_code:
+            ax = axes[3]
+            sub_ft = df[["evt_mean", "codeTotal", "group"]].dropna()
+            for grp, color in COLORS.items():
+                g = sub_ft[sub_ft["group"] == grp]
+                ax.scatter(g["evt_mean"], g["codeTotal"], color=color,
+                           label=grp.capitalize(), s=60, edgecolors="white",
+                           linewidth=0.6, zorder=5, alpha=0.9)
+            if len(sub_ft) > 2:
+                slope, intercept, r, p, _ = linregress(sub_ft["evt_mean"], sub_ft["codeTotal"])
+                x_range = np.linspace(sub_ft["evt_mean"].min(), sub_ft["evt_mean"].max(), 100)
+                ax.plot(x_range, slope * x_range + intercept, color="#f97316",
+                        linewidth=2, linestyle="--", zorder=4, label="Regression")
+                ax.text(0.97, 0.05, f"r = {r:.2f},  p = {p:.3f}",
+                        transform=ax.transAxes, ha="right", va="bottom",
+                        fontsize=10, color="#f97316",
+                        bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.7, edgecolor="#f97316"))
+            ax.set_xlabel("EVT score (motivation)")
+            ax.set_ylabel("Fritekst score (0–8)")
+            ax.set_title("EVT → Fritekst score")
             ax.legend(fontsize=9)
         plt.suptitle("EVT motivation som prædiktor", y=1.02)
         plt.tight_layout()
@@ -446,51 +469,90 @@ def run():
             print(f"  Follow-up kodning: kun N={len(fu_coded)} — springer plot over")
 
     # =========================================================
-    # 10) Total testtid — histogram + KDE per gruppe
+    # 10) Aktiv testtid — chat + læsning (histogram + KDE)
     # =========================================================
-    if "total_duration_min" in df.columns:
+    if "chatDuration" in df.columns and "readingTime" in df.columns:
         from scipy import stats as scipy_stats
 
-        dur = df["total_duration_min"].dropna()
-        # Fjern ekstreme outliers (>120 min — sandsynligvis afbrudt og genoptaget)
-        dur_clean = dur[dur <= 120]
-        n_outliers = len(dur) - len(dur_clean)
+        df["active_min"] = (df["chatDuration"].fillna(0) + df["readingTime"].fillna(0)) / 1000 / 60
+        sub_active = df[df["active_min"] > 0].copy()
 
         fig, ax = plt.subplots(figsize=(9, 5))
-
+        all_vals = []
         for grp, color in COLORS.items():
-            sub = df[(df["group"] == grp) & df["total_duration_min"].notna()]
-            sub = sub[sub["total_duration_min"] <= 120]["total_duration_min"]
-            ax.hist(sub, bins=15, alpha=0.35, color=color, label=f"{grp.capitalize()} (N={len(sub)})",
+            sub = sub_active[sub_active["group"] == grp]["active_min"]
+            all_vals.extend(sub.tolist())
+            ax.hist(sub, bins=12, alpha=0.35, color=color,
+                    label=f"{grp.capitalize()} (N={len(sub)}, M={sub.mean():.1f} min)",
                     density=True)
             if len(sub) > 5:
                 kde = scipy_stats.gaussian_kde(sub, bw_method="scott")
-                xs = np.linspace(0, 120, 300)
+                xs = np.linspace(sub.min(), sub.max(), 300)
                 ax.plot(xs, kde(xs), color=color, linewidth=2)
-                ax.axvline(sub.mean(), color=color, linestyle="--", linewidth=1.5,
-                           label=f"  M={sub.mean():.1f} min")
+                ax.axvline(sub.mean(), color=color, linestyle="--", linewidth=1.5)
 
-        # Normalfordelingstest (Shapiro-Wilk på alle)
-        if len(dur_clean) >= 3:
-            stat_sw, p_sw = scipy_stats.shapiro(dur_clean)
-            sw_txt = f"Shapiro-Wilk: W={stat_sw:.3f}, p={p_sw:.3f}"
+        if len(all_vals) >= 3:
+            stat_sw, p_sw = scipy_stats.shapiro(all_vals)
             norm_txt = "≈ normalfordelt" if p_sw > 0.05 else "ikke normalfordelt (skæv)"
-            ax.text(0.98, 0.97, f"{sw_txt}\n{norm_txt}",
-                    transform=ax.transAxes, ha="right", va="top",
-                    fontsize=9, color="#444",
+            ax.text(0.98, 0.97, f"Shapiro-Wilk: W={stat_sw:.3f}, p={p_sw:.3f}\n{norm_txt}",
+                    transform=ax.transAxes, ha="right", va="top", fontsize=9, color="#444",
                     bbox=dict(boxstyle="round,pad=0.3", fc="white", alpha=0.7))
 
-        ax.set_xlabel("Total tid (minutter)")
+        ax.set_xlabel("Aktiv tid (minutter)")
         ax.set_ylabel("Tæthed")
-        title = f"Samlet testtid per deltager  (createdAt → updatedAt)"
-        if n_outliers:
-            title += f"\n({n_outliers} outlier(s) >120 min ekskluderet fra plot)"
-        ax.set_title(title)
+        ax.set_title("Aktiv testtid per deltager (chat + læsning)")
         ax.legend()
         plt.tight_layout()
         plt.savefig("plots/10_total_duration.png", dpi=150, bbox_inches="tight")
         plt.close()
         print("  Gemt → plots/10_total_duration.png")
+
+    # ── Plot 11: Daglig deltagelse ────────────────────────────────────────────
+    raw = pd.read_csv("data/raw/latest.csv")
+    raw["createdAt"] = pd.to_datetime(raw["createdAt"], utc=True)
+    completed_raw = raw[raw["completed"] == True].copy()
+    completed_raw["date"] = completed_raw["createdAt"].dt.date
+    daily = completed_raw.groupby("date").size().reset_index(name="n")
+    daily["date"] = pd.to_datetime(daily["date"])
+
+    all_dates = pd.date_range(daily["date"].min(), daily["date"].max(), freq="D")
+    daily = daily.set_index("date").reindex(all_dates, fill_value=0).reset_index()
+    daily.columns = ["date", "n"]
+    daily["cumsum"] = daily["n"].cumsum()
+    total_n = int(daily["n"].sum())
+
+    fig, (ax_bar, ax_cum) = plt.subplots(2, 1, figsize=(10, 7), sharex=True)
+
+    import matplotlib.dates as mdates
+    MONTH_DA = {3: "mar", 4: "apr", 5: "maj", 6: "jun", 7: "jul", 8: "aug"}
+
+    # Øverst: nye per dag
+    bars = ax_bar.bar(daily["date"], daily["n"], color=COLORS["intervention"], alpha=0.75, width=0.8)
+    for bar, val in zip(bars, daily["n"]):
+        if val > 0:
+            ax_bar.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.05,
+                        str(int(val)), ha="center", va="bottom", fontsize=8)
+    ax_bar.set_ylabel("Nye fuldførsler per dag")
+    ax_bar.set_title(f"Daglig deltagelse — total N={total_n}")
+    ax_bar.yaxis.set_major_locator(plt.MaxNLocator(integer=True))
+
+    # Nederst: kumulativ
+    ax_cum.plot(daily["date"], daily["cumsum"], color=COLORS["intervention"], linewidth=2)
+    ax_cum.fill_between(daily["date"], daily["cumsum"], alpha=0.15, color=COLORS["intervention"])
+    ax_cum.set_ylabel("Kumulativt antal")
+    ax_cum.set_xlabel("Dato")
+
+    # Datoformat: "d. 2 apr"
+    def fmt_date(d, _):
+        dt = mdates.num2date(d)
+        return f"d. {dt.day} {MONTH_DA.get(dt.month, dt.strftime('%b'))}"
+    ax_cum.xaxis.set_major_locator(mdates.DayLocator(interval=1))
+    ax_cum.xaxis.set_major_formatter(plt.FuncFormatter(fmt_date))
+    fig.autofmt_xdate(rotation=45)
+    plt.tight_layout()
+    plt.savefig("plots/11_daglig_deltagelse.png", dpi=150, bbox_inches="tight")
+    plt.close()
+    print("  Gemt → plots/11_daglig_deltagelse.png")
 
     print(f"  Gemt → plots/")
 
