@@ -112,6 +112,7 @@ export default function Home() {
   // Follow-up / giveaway
   const [followUpEmail, setFollowUpEmail] = useState("");
   const [followUpSubmitted, setFollowUpSubmitted] = useState(false);
+  const [showSurveySwap, setShowSurveySwap] = useState(false);
 
   // Device type
   const [deviceType, setDeviceType] = useState<string | null>(null);
@@ -144,7 +145,7 @@ export default function Home() {
       return;
     }
 
-    const newGroup: Group = Math.random() < 0.7 ? "control" : "intervention"; // Adaptive: temporarily increased to 70% control (was 50%) to correct imbalance (n_ctrl=23, n_intr=33 observed 2026-04-11)
+    const newGroup: Group = Math.random() < 0.5 ? "control" : "intervention";
     const newId = generateUUID();
 
     localStorage.setItem("group", newGroup);
@@ -1361,6 +1362,44 @@ export default function Home() {
                 </div>
               )}
             </div>
+            {/* SurveySwap — hidden for now */}
+            {false && <div className="rounded-lg border border-zinc-700 bg-zinc-800 p-4 space-y-3">
+              <button
+                className="w-full text-left text-sm font-semibold text-zinc-200 flex justify-between items-center"
+                onClick={() => setShowSurveySwap(v => !v)}
+              >
+                <span>🔁 {lang === "da" ? "Jeg kommer fra SurveySwap" : "I came from SurveySwap"}</span>
+                <span className="text-zinc-400">{showSurveySwap ? "▲" : "▼"}</span>
+              </button>
+              {showSurveySwap && (
+                <div className="space-y-2 pt-1 border-t border-zinc-700">
+                  <p className="text-xs text-zinc-400">
+                    {lang === "da"
+                      ? "Indtast denne kode på SurveySwap for at få dine Karma-point:"
+                      : "Enter this code on SurveySwap to receive your Karma points:"}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 rounded bg-zinc-900 border border-zinc-600 px-3 py-2 text-sm font-mono text-green-300 tracking-widest">
+                      M5GF-TLU2-E3IA
+                    </code>
+                    <button
+                      className="rounded-lg bg-zinc-700 text-white px-3 py-2 text-xs shrink-0"
+                      onClick={() => navigator.clipboard.writeText("M5GF-TLU2-E3IA")}
+                    >
+                      {lang === "da" ? "Kopiér" : "Copy"}
+                    </button>
+                  </div>
+                  <a
+                    href="https://surveyswap.io/sr/M5GF-TLU2-E3IA"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block text-xs text-blue-400 underline"
+                  >
+                    surveyswap.io/sr/M5GF-TLU2-E3IA →
+                  </a>
+                </div>
+              )}
+            </div>}
           </section>
         )}
       </div>

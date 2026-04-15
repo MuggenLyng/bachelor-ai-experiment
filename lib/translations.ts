@@ -282,8 +282,8 @@ export const T = {
       invalidContact: "Spørgsmål? Kontakt lyngmagnus@gmail.com",
       introTitle: "Tak fordi du er tilbage! :)",
       introText:
-        "Dette er follow-up delen af Magnus og Oles bacheloreksperiment. Det tager kun ca. 3–5 minutter.",
-      introHighlight: "ca. 3–5 minutter",
+        "Dette er follow-up delen af Magnus og Oles bacheloreksperiment. Det tager kun ca. 5 minutter.",
+      introHighlight: "ca. 5 minutter",
       introInstruction:
         "Du vil blive bedt om at forklare emnet fra det første eksperiment med egne ord uden hjælpemidler.",
       introTeaser: "Er du klar til at vinde 500 kr... måske?",
@@ -591,8 +591,8 @@ export const T = {
       invalidContact: "Questions? Contact lyngmagnus@gmail.com",
       introTitle: "Thank you for coming back! :)",
       introText:
-        "This is the follow-up part of Magnus and Ole's bachelor experiment. It only takes about 3–5 minutes.",
-      introHighlight: "about 3–5 minutes",
+        "This is the follow-up part of Magnus and Ole's bachelor experiment. It only takes about 5 minutes.",
+      introHighlight: "about 5 minutes",
       introInstruction:
         "You will be asked to explain the topic from the first experiment in your own words without any aids.",
       introTeaser: "Ready to win 500 DKK... maybe?",
