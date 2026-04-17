@@ -111,8 +111,9 @@ function FollowUpExperiment() {
           <section className="bg-zinc-900 rounded-xl border p-6 border-zinc-800 space-y-4">
             <h2 className="text-2xl font-bold text-zinc-50 text-center">{tx.introTitle}</h2>
             <p className="text-base text-zinc-200 leading-relaxed">
-              {tx.introText.replace(tx.introHighlight, "")}
-              <span className="font-medium text-zinc-100">{tx.introHighlight}</span>.
+              {tx.introText.split(tx.introHighlight)[0]}
+              <span className="font-medium text-zinc-100">{tx.introHighlight}</span>
+              {tx.introText.split(tx.introHighlight)[1]}
             </p>
             <p className="text-base text-zinc-200 leading-relaxed">{tx.introInstruction}</p>
             <p className="text-base text-green-400 font-bold text-center">{tx.introTeaser}</p>

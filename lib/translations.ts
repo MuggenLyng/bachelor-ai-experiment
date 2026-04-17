@@ -275,7 +275,7 @@ export const T = {
     },
 
     followup: {
-      appTitle: "Bachelor-eksperiment – Follow-up",
+      appTitle: "Bachelor-eksperiment: Follow-up",
       invalidTitle: "Ugyldigt link",
       invalidText:
         "Dette link er ugyldigt eller udløbet. Tjek at du har brugt det korrekte link fra vores e-mail.",
@@ -584,7 +584,7 @@ export const T = {
     },
 
     followup: {
-      appTitle: "Bachelor Experiment – Follow-up",
+      appTitle: "Bachelor Experiment: Follow-up",
       invalidTitle: "Invalid link",
       invalidText:
         "This link is invalid or has expired. Please check that you used the correct link from our email.",
