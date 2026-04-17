@@ -469,7 +469,11 @@ export default function Dashboard() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
                 <XAxis dataKey="x" type="number" domain={[-0.5, 1.5]}
                   ticks={[0, 1]}
-                  tickFormatter={(v: number) => v === 0 ? `Ctrl (n=${ctrl.n})` : `Intr (n=${intr.n})`}
+                  tickFormatter={(v: number) => {
+                    const nC = (codingPoints??[]).filter((x:any)=>x.group==="control").length;
+                    const nI = (codingPoints??[]).filter((x:any)=>x.group==="intervention").length;
+                    return v === 0 ? `Ctrl (n=${nC})` : `Intr (n=${nI})`;
+                  }}
                   tick={{ fill: "#a1a1aa", fontSize: 11 }} />
                 <YAxis dataKey="y" domain={[0, 8]} ticks={[0,2,4,6,8]}
                   tick={{ fill: "#a1a1aa", fontSize: 11 }} />
@@ -618,7 +622,11 @@ export default function Dashboard() {
               <ScatterChart margin={{ top: 16, right: 16, bottom: 0, left: -10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
                 <XAxis dataKey="x" type="number" domain={[-0.5, 1.5]}
-                  ticks={[0, 1]} tickFormatter={(v: number) => v === 0 ? "Control" : "Interv."}
+                  ticks={[0, 1]} tickFormatter={(v: number) => {
+                    const nC = (followUpCodingPoints??[]).filter((x:any)=>x.group==="control").length;
+                    const nI = (followUpCodingPoints??[]).filter((x:any)=>x.group==="intervention").length;
+                    return v === 0 ? `Ctrl (n=${nC})` : `Intr (n=${nI})`;
+                  }}
                   tick={{ fill: "#a1a1aa", fontSize: 11 }} />
                 <YAxis dataKey="y" domain={[0, 8]} ticks={[0,2,4,6,8]} tick={{ fill: "#a1a1aa", fontSize: 11 }} />
                 <Tooltip cursor={false} content={({ payload }) => {
