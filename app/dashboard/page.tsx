@@ -13,6 +13,90 @@ import {
 const COLORS = { control: "#6B7280", intervention: "#3B82F6" };
 const PIE_COLORS = ["#3B82F6", "#EC4899", "#A78BFA", "#6B7280"];
 
+const TR = {
+  da: {
+    title: "Eksperiment Dashboard",
+    updatesEvery: "Opdateres hvert 30 sek · Sidst hentet:",
+    participants: "Deltagere",
+    totalVisits: "Total besøg",
+    completed: "Fuldførte",
+    followupDone: "Follow-up fuldført",
+    dropouts: "Dropouts",
+    primaryGoals: "Primære mål",
+    secondaryGoals: "Sekundære mål",
+    fritekstScores: "Fritekst scorene",
+    fritekstFollowup: "Fritekst follow-up scorene",
+    mcq: "MCQ",
+    chatbotExp: "Oplevelse af chatbot",
+    behavTime: "Adfærd & Tid",
+    demography: "Demografi",
+    loading: "Henter data...",
+    error: "Fejl ved hentning af data.",
+    scale: "Skala",
+    readingTime: "Læsetid (sekunder)",
+    chatDuration: "Chat varighed (minutter)",
+    charsWritten: "Tegn skrevet (fritekst)",
+    chatMessages: "Antal chat-beskeder per deltager",
+    charsFollowup: "Tegn skrevet (followup)",
+    deviceGain: "Enhedstype × learning gain",
+    mobileDesktop: "Mobile vs. desktop (Welch t-test)",
+    ageDist: "Aldersfordeling per gruppe (balancetjek)",
+    gender: "Køn",
+    education: "Uddannelse",
+    pretest: "Pretest",
+    posttest: "Posttest",
+    learningGain: "Learning gain",
+    subjLearning: "Subj. læring",
+    easeConv: "Nem samtale",
+    adapt: "Tilpasning",
+    mentalEffort: "Mental indsats",
+    effSmall: "lille", effSmallMod: "lille-moderat", effMod: "moderat", effLarge: "stor", effTriv: "triviel",
+    minRead: "Min. 60s", minChat: "Min. 3.5 min", minChars: "Min. 250",
+    seconds: "Sekunder", minutes: "Minutter", chars: "Tegn", messages: "Beskeder", age: "Alder",
+  },
+  en: {
+    title: "Experiment Dashboard",
+    updatesEvery: "Updates every 30 sec · Last fetched:",
+    participants: "Participants",
+    totalVisits: "Total visits",
+    completed: "Completed",
+    followupDone: "Follow-up completed",
+    dropouts: "Dropouts",
+    primaryGoals: "Primary outcomes",
+    secondaryGoals: "Secondary outcomes",
+    fritekstScores: "Free-text scores",
+    fritekstFollowup: "Free-text follow-up scores",
+    mcq: "MCQ",
+    chatbotExp: "Chatbot experience",
+    behavTime: "Behaviour & Time",
+    demography: "Demographics",
+    loading: "Loading data...",
+    error: "Error fetching data.",
+    scale: "Scale",
+    readingTime: "Reading time (seconds)",
+    chatDuration: "Chat duration (minutes)",
+    charsWritten: "Characters written (free-text)",
+    chatMessages: "Chat messages per participant",
+    charsFollowup: "Characters written (follow-up)",
+    deviceGain: "Device type × learning gain",
+    mobileDesktop: "Mobile vs. desktop (Welch t-test)",
+    ageDist: "Age distribution per group (balance check)",
+    gender: "Gender",
+    education: "Education",
+    pretest: "Pretest",
+    posttest: "Posttest",
+    learningGain: "Learning gain",
+    subjLearning: "Subj. learning",
+    easeConv: "Ease of conv.",
+    adapt: "Adaptation",
+    mentalEffort: "Mental effort",
+    effSmall: "small", effSmallMod: "small-mod.", effMod: "moderate", effLarge: "large", effTriv: "trivial",
+    minRead: "Min. 60s", minChat: "Min. 3.5 min", minChars: "Min. 250",
+    seconds: "Seconds", minutes: "Minutes", chars: "Chars", messages: "Messages", age: "Age",
+  },
+} as const;
+type DashLang = keyof typeof TR;
+
 function fmt(n: number | null, dec = 2) {
   return n === null ? "—" : n.toFixed(dec);
 }
@@ -23,17 +107,16 @@ function tooltipFmt(value: any) {
 
 type CmpStat = { t: number; p: number; d: number } | null;
 
-function StatRow({ cmp }: { cmp: CmpStat }) {
+function StatRow({ cmp, lang = "da" }: { cmp: CmpStat; lang?: DashLang }) {
   if (!cmp) return null;
+  const t = TR[lang];
   const sig = cmp.p < 0.05;
   const pStr = cmp.p < 0.001 ? "< .001" : cmp.p.toFixed(3).replace("0.", ".");
   const dAbs = Math.abs(cmp.d);
-  const mag = dAbs >= 0.8 ? "stor" : dAbs >= 0.4 ? "moderat" : dAbs >= 0.35 ? "lille-moderat" : dAbs >= 0.2 ? "lille" : "triviel";
+  const mag = dAbs >= 0.8 ? t.effLarge : dAbs >= 0.4 ? t.effMod : dAbs >= 0.35 ? t.effSmallMod : dAbs >= 0.2 ? t.effSmall : t.effTriv;
   return (
     <div className="flex gap-3 text-xs mt-1 flex-wrap">
-      <span className="text-zinc-400">
-        p = {pStr}{sig ? " *" : ""}
-      </span>
+      <span className="text-zinc-400">p = {pStr}{sig ? " *" : ""}</span>
       <span className="text-zinc-500">t = {cmp.t.toFixed(2)}</span>
       <span className="text-zinc-500">d = {cmp.d.toFixed(2)} <span className="text-zinc-600">({mag})</span></span>
     </div>
@@ -277,6 +360,8 @@ function DistChart({ ctrl, intr, label, refLine, refLabel, meanLine, combined = 
 export default function Dashboard() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [lang, setLang] = useState<DashLang>("da");
+  const t = TR[lang];
 
   const fetchData = async () => {
     const res = await fetch("/api/dashboard");
@@ -290,8 +375,8 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  if (loading) return <div className="p-10 text-zinc-400">Henter data...</div>;
-  if (!data) return <div className="p-10 text-red-400">Fejl ved hentning af data.</div>;
+  if (loading) return <div className="p-10 text-zinc-400">{t.loading}</div>;
+  if (!data) return <div className="p-10 text-red-400">{t.error}</div>;
 
   const { nTotal, nCompleted, nDropouts, nFollowUp, groupStats, comparisons: cmp, demographics, deviceGain, deviceComparison, codingPoints, codingStats, followUpCodingPoints, followUpCodingStats, lastUpdated } = data;
   const ctrl = groupStats.control;
@@ -308,10 +393,10 @@ export default function Dashboard() {
   ];
 
   const secondaryData = [
-    { name: "Subjektiv læring",      Control: ctrl.perceivedLearning1Mean,  errCtrl: ctrl.perceivedLearning1Sem,  Intervention: intr.perceivedLearning1Mean,  errIntr: intr.perceivedLearning1Sem },
-    { name: "Nem at samtale",        Control: ctrl.easeOfConversating1Mean, errCtrl: ctrl.easeOfConversating1Sem, Intervention: intr.easeOfConversating1Mean, errIntr: intr.easeOfConversating1Sem },
-    { name: "Tilpasning til behov",  Control: ctrl.adaptingToNeeds1Mean,    errCtrl: ctrl.adaptingToNeeds1Sem,    Intervention: intr.adaptingToNeeds1Mean,    errIntr: intr.adaptingToNeeds1Sem },
-    { name: "Mental indsats",        Control: ctrl.mentalEffortMean,        errCtrl: ctrl.mentalEffortSem,        Intervention: intr.mentalEffortMean,        errIntr: intr.mentalEffortSem },
+    { name: lang === "da" ? "Subjektiv læring"     : "Subj. learning",   Control: ctrl.perceivedLearning1Mean,  errCtrl: ctrl.perceivedLearning1Sem,  Intervention: intr.perceivedLearning1Mean,  errIntr: intr.perceivedLearning1Sem },
+    { name: lang === "da" ? "Nem at samtale"       : "Ease of conv.",    Control: ctrl.easeOfConversating1Mean, errCtrl: ctrl.easeOfConversating1Sem, Intervention: intr.easeOfConversating1Mean, errIntr: intr.easeOfConversating1Sem },
+    { name: lang === "da" ? "Tilpasning til behov" : "Adaptation",       Control: ctrl.adaptingToNeeds1Mean,    errCtrl: ctrl.adaptingToNeeds1Sem,    Intervention: intr.adaptingToNeeds1Mean,    errIntr: intr.adaptingToNeeds1Sem },
+    { name: lang === "da" ? "Mental indsats"       : "Mental effort",    Control: ctrl.mentalEffortMean,        errCtrl: ctrl.mentalEffortSem,        Intervention: intr.mentalEffortMean,        errIntr: intr.mentalEffortSem },
   ];
 
   const genderData = Object.entries(demographics.genderCounts as Record<string, number>).map(
@@ -327,30 +412,36 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Eksperiment Dashboard</h1>
+          <h1 className="text-2xl font-bold">{t.title}</h1>
           <p className="text-xs text-zinc-500 mt-1">
-            Opdateres hvert 30 sek · Sidst hentet: {new Date(lastUpdated).toLocaleTimeString("da-DK")}
+            {t.updatesEvery} {new Date(lastUpdated).toLocaleTimeString(lang === "da" ? "da-DK" : "en-GB")}
           </p>
         </div>
+        <button
+          onClick={() => setLang(l => l === "da" ? "en" : "da")}
+          className="px-3 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-sm text-zinc-300 hover:bg-zinc-700 transition-colors"
+        >
+          {lang === "da" ? "EN" : "DA"}
+        </button>
       </div>
 
       {/* Deltagere — altid synlig */}
       <section className="space-y-2">
-        <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">Deltagere</h2>
+        <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">{t.participants}</h2>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          <Stat label="Total besøg" value={nTotal} />
-          <Stat label="Fuldførte" value={nCompleted} />
+          <Stat label={t.totalVisits} value={nTotal} />
+          <Stat label={t.completed} value={nCompleted} />
           <Stat label="Control" value={ctrl.n} sub="standard AI" />
-          <Stat label="Intervention" value={intr.n} sub="pæd.-psyk. AI" />
-          <Stat label="Follow-up fuldført" value={nFollowUp ?? "—"} sub={nCompleted ? `${Math.round(((nFollowUp ?? 0) / nCompleted) * 100)}%` : undefined} />
+          <Stat label="Intervention" value={intr.n} sub="ped. AI" />
+          <Stat label={t.followupDone} value={nFollowUp ?? "—"} sub={nCompleted ? `${Math.round(((nFollowUp ?? 0) / nCompleted) * 100)}%` : undefined} />
         </div>
-        <p className="text-xs text-zinc-500">Dropouts: {nDropouts}</p>
+        <p className="text-xs text-zinc-500">{t.dropouts}: {nDropouts}</p>
       </section>
 
       {/* ── PRIMÆRE MÅL ─────────────────────────────────────────── */}
-      <h2 className="text-xl font-bold text-zinc-100 text-center">Primære mål</h2>
+      <h2 className="text-xl font-bold text-zinc-100 text-center">{t.primaryGoals}</h2>
 
-      <Section title="Fritekst scorene">
+      <Section title={t.fritekstScores}>
         {/* Top row: dotplot + total barplot side by side */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
@@ -500,7 +591,7 @@ export default function Dashboard() {
       </Section>
 
       {/* Follow-up fritekst */}
-      <Section title="Fritekst follow-up scorene">
+      <Section title={t.fritekstFollowup}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Follow-up dotplot */}
           <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
@@ -640,7 +731,7 @@ export default function Dashboard() {
       </Section>
 
       {/* MCQ */}
-      <Section title="MCQ" defaultOpen={false}>
+      <Section title={t.mcq} defaultOpen={false}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
             <p className="text-xs text-zinc-400 mb-3">Gennemsnitlig score: pre vs. post MCQ</p>
@@ -685,12 +776,12 @@ export default function Dashboard() {
       </Section>
 
       {/* ── SEKUNDÆRE MÅL ───────────────────────────────────────── */}
-      <h2 className="text-xl font-bold text-zinc-100 text-center">Sekundære mål</h2>
+      <h2 className="text-xl font-bold text-zinc-100 text-center">{t.secondaryGoals}</h2>
 
       {/* Oplevelse af chatbot */}
-      <Section title="Oplevelse af chatbot" defaultOpen={false}>
+      <Section title={t.chatbotExp} defaultOpen={false}>
         <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
-          <p className="text-xs text-zinc-400 mb-3">Skala 1–6</p>
+          <p className="text-xs text-zinc-400 mb-3">{t.scale} 1–6</p>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={secondaryData} barGap={4} margin={{ top: 8, right: 16, bottom: 36, left: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
@@ -706,30 +797,30 @@ export default function Dashboard() {
             </BarChart>
           </ResponsiveContainer>
           <div className="grid grid-cols-2 gap-x-6 gap-y-1 mt-3">
-            <div><p className="text-xs text-zinc-500 mb-0.5">Subj. læring</p><StatRow cmp={cmp?.perceivedLearning} /></div>
-            <div><p className="text-xs text-zinc-500 mb-0.5">Nem samtale</p><StatRow cmp={cmp?.easeOfConversating} /></div>
-            <div><p className="text-xs text-zinc-500 mb-0.5">Tilpasning</p><StatRow cmp={cmp?.adaptingToNeeds} /></div>
-            <div><p className="text-xs text-zinc-500 mb-0.5">Mental indsats</p><StatRow cmp={cmp?.mentalEffort} /></div>
+            <div><p className="text-xs text-zinc-500 mb-0.5">{t.subjLearning}</p><StatRow cmp={cmp?.perceivedLearning} lang={lang} /></div>
+            <div><p className="text-xs text-zinc-500 mb-0.5">{t.easeConv}</p><StatRow cmp={cmp?.easeOfConversating} lang={lang} /></div>
+            <div><p className="text-xs text-zinc-500 mb-0.5">{t.adapt}</p><StatRow cmp={cmp?.adaptingToNeeds} lang={lang} /></div>
+            <div><p className="text-xs text-zinc-500 mb-0.5">{t.mentalEffort}</p><StatRow cmp={cmp?.mentalEffort} lang={lang} /></div>
           </div>
         </div>
       </Section>
 
       {/* Adfærd & Tid */}
-      <Section title="Adfærd & Tid" defaultOpen={false}>
+      <Section title={t.behavTime} defaultOpen={false}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <DistChart ctrl={ctrl.readingTimeSec} intr={intr.readingTimeSec} label="Læsetid (sekunder)" refLine={60} refLabel="Min. 60s" combined xLabel="Sekunder" />
-          <DistChart ctrl={ctrl.chatDurationMin} intr={intr.chatDurationMin} label="Chat varighed (minutter)" refLine={3.5} refLabel="Min. 3.5 min" xLabel="Minutter" stats={cmp?.chatDuration} />
-          <DistChart ctrl={ctrl.freeTextChars} intr={intr.freeTextChars} label="Tegn skrevet (fritekst)" refLine={250} refLabel="Min. 250" xLabel="Tegn" stats={cmp?.freeText} />
-          <DistChart ctrl={ctrl.chatMessages} intr={intr.chatMessages} label="Antal chat-beskeder per deltager" xLabel="Beskeder" stats={cmp?.chatMessages} />
+          <DistChart ctrl={ctrl.readingTimeSec} intr={intr.readingTimeSec} label={t.readingTime} refLine={60} refLabel={t.minRead} combined xLabel={t.seconds} />
+          <DistChart ctrl={ctrl.chatDurationMin} intr={intr.chatDurationMin} label={t.chatDuration} refLine={3.5} refLabel={t.minChat} xLabel={t.minutes} stats={cmp?.chatDuration} />
+          <DistChart ctrl={ctrl.freeTextChars} intr={intr.freeTextChars} label={t.charsWritten} refLine={250} refLabel={t.minChars} xLabel={t.chars} stats={cmp?.freeText} />
+          <DistChart ctrl={ctrl.chatMessages} intr={intr.chatMessages} label={t.chatMessages} xLabel={t.messages} stats={cmp?.chatMessages} />
         </div>
 
         {/* Tegn skrevet followup + Enhedstype × learning gain — side by side on sm+ */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <DistChart ctrl={ctrl.followUpFreeTextChars} intr={intr.followUpFreeTextChars} label="Tegn skrevet (followup)" refLine={250} refLabel="Min. 250" xLabel="Tegn" />
+          <DistChart ctrl={ctrl.followUpFreeTextChars} intr={intr.followUpFreeTextChars} label={t.charsFollowup} refLine={250} refLabel={t.minChars} xLabel={t.chars} />
 
           {/* Device type × learning gain */}
           <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4 space-y-3">
-            <p className="text-xs text-zinc-400">Enhedstype × learning gain</p>
+            <p className="text-xs text-zinc-400">{t.deviceGain}</p>
             <div className="flex flex-wrap gap-3">
               {Object.entries(deviceGain ?? {}).sort((a: any, b: any) => b[1].n - a[1].n).map(([dt, s]: [string, any]) => (
                 <div key={dt} className="bg-zinc-800 rounded-lg px-3 py-2 min-w-[100px]">
@@ -741,7 +832,7 @@ export default function Dashboard() {
             </div>
             {deviceComparison && (
               <div className="pt-1">
-                <p className="text-xs text-zinc-500 mb-0.5">Mobile vs. desktop (Welch t-test)</p>
+                <p className="text-xs text-zinc-500 mb-0.5">{t.mobileDesktop}</p>
                 <StatRow cmp={deviceComparison} />
               </div>
             )}
@@ -750,16 +841,16 @@ export default function Dashboard() {
       </Section>
 
       {/* Demografi */}
-      <Section title="Demografi" defaultOpen={false}>
+      <Section title={t.demography} defaultOpen={false}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <DistChart
             ctrl={ctrl.ageValues} intr={intr.ageValues}
-            label="Aldersfordeling per gruppe (balancetjek)"
-            xLabel="Alder"
+            label={t.ageDist}
+            xLabel={t.age}
             stats={cmp?.age}
           />
           <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4 space-y-2">
-            <p className="text-xs text-zinc-400">Køn</p>
+            <p className="text-xs text-zinc-400">{t.gender}</p>
             {genderData.length ? (
               <>
                 <div className="flex flex-wrap gap-x-4 gap-y-1">
