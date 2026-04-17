@@ -53,6 +53,12 @@ const TR = {
     effSmall: "lille", effSmallMod: "lille-moderat", effMod: "moderat", effLarge: "stor", effTriv: "triviel",
     minRead: "Min. 60s", minChat: "Min. 3.5 min", minChars: "Min. 250",
     seconds: "Sekunder", minutes: "Minutter", chars: "Tegn", messages: "Beskeder", age: "Alder",
+    fritekstTotalScore: "Fritekst total score (0–8)",
+    followupTotalScore: "Follow-up total score (0–8)",
+    paramsLabel: "Parametre (M ± SE, skala 0–2)",
+    eduLevel: "Uddannelsesniveau",
+    params: [["A1","Energibalance"],["A2","Kompensation"],["A3","Konsekvens"],["B1","Løsning"]] as [string,string][],
+    eduMap: { "Gymnasial uddannelse": "Gymnasial uddannelse", "Bachelor": "Bachelor", "Kandidat": "Kandidat", "Professionsbachelor": "Professionsbachelor", "PhD eller højere": "PhD eller højere", "Erhvervsuddannelse": "Erhvervsuddannelse", "Andet": "Andet", "Grundskole": "Grundskole" } as Record<string,string>,
   },
   en: {
     title: "Experiment Dashboard",
@@ -93,6 +99,12 @@ const TR = {
     effSmall: "small", effSmallMod: "small-mod.", effMod: "moderate", effLarge: "large", effTriv: "trivial",
     minRead: "Min. 60s", minChat: "Min. 3.5 min", minChars: "Min. 250",
     seconds: "Seconds", minutes: "Minutes", chars: "Chars", messages: "Messages", age: "Age",
+    fritekstTotalScore: "Free-text total score (0–8)",
+    followupTotalScore: "Follow-up total score (0–8)",
+    paramsLabel: "Parameters (M ± SE, scale 0–2)",
+    eduLevel: "Education level",
+    params: [["A1","Energy balance"],["A2","Compensation"],["A3","Consequence"],["B1","Solution"]] as [string,string][],
+    eduMap: { "Gymnasial uddannelse": "Upper secondary", "Bachelor": "Bachelor's", "Kandidat": "Master's", "Professionsbachelor": "Prof. bachelor", "PhD eller højere": "PhD or higher", "Erhvervsuddannelse": "Vocational", "Andet": "Other", "Grundskole": "Primary school" } as Record<string,string>,
   },
 } as const;
 type DashLang = keyof typeof TR;
@@ -388,8 +400,8 @@ export default function Dashboard() {
   ];
 
   const gainData = [
-    { name: "Control",      gain: ctrl.gainMean, err: ctrl.gainSem, fill: COLORS.control },
-    { name: "Intervention", gain: intr.gainMean, err: intr.gainSem, fill: COLORS.intervention },
+    { name: `Control (n=${ctrl.n})`,      gain: ctrl.gainMean, err: ctrl.gainSem, fill: COLORS.control },
+    { name: `Intervention (n=${intr.n})`, gain: intr.gainMean, err: intr.gainSem, fill: COLORS.intervention },
   ];
 
   const secondaryData = [
@@ -403,7 +415,10 @@ export default function Dashboard() {
     ([name, value]) => ({ name, value })
   );
   const eduData = Object.entries(demographics.eduCounts as Record<string, number>)
-    .map(([name, value]) => ({ name: name.replace(/\s*\(.*?\)\s*/g, "").trim(), value }))
+    .map(([name, value]) => {
+      const trimmed = name.replace(/\s*\(.*?\)\s*/g, "").trim();
+      return { name: t.eduMap[trimmed] ?? trimmed, value };
+    })
     .sort((a, b) => b.value - a.value);
 
   return (
@@ -447,14 +462,14 @@ export default function Dashboard() {
 
           {/* Dotplot */}
           <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
-            <p className="text-xs text-zinc-400 mb-1">Fritekst total score (0–8)</p>
+            <p className="text-xs text-zinc-400 mb-1">{t.fritekstTotalScore}</p>
             {codingStats && <StatRow cmp={codingStats.totalCmp} />}
             <ResponsiveContainer width="100%" height={280}>
               <ScatterChart margin={{ top: 16, right: 16, bottom: 0, left: -10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
                 <XAxis dataKey="x" type="number" domain={[-0.5, 1.5]}
                   ticks={[0, 1]}
-                  tickFormatter={(v: number) => v === 0 ? "Control" : "Interv."}
+                  tickFormatter={(v: number) => v === 0 ? `Ctrl (n=${ctrl.n})` : `Intr (n=${intr.n})`}
                   tick={{ fill: "#a1a1aa", fontSize: 11 }} />
                 <YAxis dataKey="y" domain={[0, 8]} ticks={[0,2,4,6,8]}
                   tick={{ fill: "#a1a1aa", fontSize: 11 }} />
@@ -524,10 +539,12 @@ export default function Dashboard() {
             <ResponsiveContainer width="100%" height={280}>
               <BarChart
                 data={(() => {
-                  const t = codingStats?.params?.find((x:any)=>x.param==="total");
+                  const p = codingStats?.params?.find((x:any)=>x.param==="total");
+                  const nCtrl = (codingPoints??[]).filter((x:any)=>x.group==="control").length;
+                  const nIntr = (codingPoints??[]).filter((x:any)=>x.group==="intervention").length;
                   return [
-                    { name: "Control",      value: t?.controlMean??0,      err: t?.controlSem??0,      fill: COLORS.control },
-                    { name: "Intervention", value: t?.interventionMean??0,  err: t?.interventionSem??0,  fill: COLORS.intervention },
+                    { name: `Control (n=${nCtrl})`,      value: p?.controlMean??0,     err: p?.controlSem??0,     fill: COLORS.control },
+                    { name: `Intervention (n=${nIntr})`, value: p?.interventionMean??0, err: p?.interventionSem??0, fill: COLORS.intervention },
                   ];
                 })()}
                 barGap={8} margin={{ top: 16, right: 16, bottom: 0, left: 0 }}>
@@ -560,11 +577,11 @@ export default function Dashboard() {
 
         {/* Bottom row: params barplot full width */}
         <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
-          <p className="text-xs text-zinc-400 mb-1">Parametre (M ± SE, skala 0–2)</p>
+          <p className="text-xs text-zinc-400 mb-1">{t.paramsLabel}</p>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart
               data={[
-                ["A1","Energibalance"],["A2","Kompensation"],["A3","Konsekvens"],["B1","Løsning"],
+                ...t.params,
               ].map(([p, label]) => {
                 const s = codingStats?.params?.find((x:any) => x.param === p);
                 return { name: label, Control: s?.controlMean??0, Intervention: s?.interventionMean??0, errCtrl: s?.controlSem??0, errIntr: s?.interventionSem??0 };
@@ -669,10 +686,12 @@ export default function Dashboard() {
             <ResponsiveContainer width="100%" height={280}>
               <BarChart
                 data={(() => {
-                  const t = followUpCodingStats?.params?.find((x:any)=>x.param==="total");
+                  const p = followUpCodingStats?.params?.find((x:any)=>x.param==="total");
+                  const nCtrl = (followUpCodingPoints??[]).filter((x:any)=>x.group==="control").length;
+                  const nIntr = (followUpCodingPoints??[]).filter((x:any)=>x.group==="intervention").length;
                   return [
-                    { name: "Control",      value: t?.controlMean??0,     err: t?.controlSem??0,     fill: COLORS.control },
-                    { name: "Intervention", value: t?.interventionMean??0, err: t?.interventionSem??0, fill: COLORS.intervention },
+                    { name: `Control (n=${nCtrl})`,      value: p?.controlMean??0,     err: p?.controlSem??0,     fill: COLORS.control },
+                    { name: `Intervention (n=${nIntr})`, value: p?.interventionMean??0, err: p?.interventionSem??0, fill: COLORS.intervention },
                   ];
                 })()}
                 barGap={8} margin={{ top: 16, right: 16, bottom: 0, left: 0 }}>
@@ -701,11 +720,11 @@ export default function Dashboard() {
 
         {/* Follow-up parametre */}
         <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
-          <p className="text-xs text-zinc-400 mb-1">Parametre (M ± SE, skala 0–2)</p>
+          <p className="text-xs text-zinc-400 mb-1">{t.paramsLabel}</p>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart
               data={[
-                ["A1","Energibalance"],["A2","Kompensation"],["A3","Konsekvens"],["B1","Løsning"],
+                ...t.params,
               ].map(([p, label]) => {
                 const s = followUpCodingStats?.params?.find((x:any) => x.param === p);
                 return { name: label, Control: s?.controlMean??0, Intervention: s?.interventionMean??0, errCtrl: s?.controlSem??0, errIntr: s?.interventionSem??0 };
@@ -879,7 +898,7 @@ export default function Dashboard() {
         </div>
 
         <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4 space-y-2">
-          <p className="text-xs text-zinc-400">Uddannelsesniveau</p>
+          <p className="text-xs text-zinc-400">{t.eduLevel}</p>
           {eduData.length ? (
             <ResponsiveContainer width="100%" height={160}>
               <BarChart data={eduData} margin={{ top: 4, right: 8, bottom: 4, left: 0 }}>
