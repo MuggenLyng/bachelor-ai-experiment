@@ -500,7 +500,7 @@ export default function Dashboard() {
       </Section>
 
       {/* Follow-up fritekst */}
-      <Section title="Fritekst follow-up scorene" defaultOpen={false}>
+      <Section title="Fritekst follow-up scorene">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Follow-up dotplot */}
           <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
@@ -640,7 +640,7 @@ export default function Dashboard() {
       </Section>
 
       {/* MCQ */}
-      <Section title="MCQ">
+      <Section title="MCQ" defaultOpen={false}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
             <p className="text-xs text-zinc-400 mb-3">Gennemsnitlig score: pre vs. post MCQ</p>
