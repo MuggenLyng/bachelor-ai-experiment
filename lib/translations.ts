@@ -292,7 +292,7 @@ export const T = {
       freeTextScenario:
         "Kim begynder at motionere meget mere end før, men oplever, at vægttabet er mindre end forventet.",
       freeTextQuestion:
-        "Forklar med egne ord, hvorfor dette kan ske ud fra modellen i teksten, og hvad Kim kunne gøre for at tabe sig yderligere.",
+        "Forklar med egne ord, hvorfor dette kan ske ud fra teksten du læste i det første eksperiment, og hvad Kim kunne gøre for at tabe sig yderligere.",
       placeholder: "Skriv her...",
       charCount: (n: number) => `Tegn: ${n} / 250`,
       submitBtn: "Afslut →",
@@ -601,7 +601,7 @@ export const T = {
       freeTextScenario:
         "Kim starts exercising much more than before, but finds that the weight loss is less than expected.",
       freeTextQuestion:
-        "Explain in your own words why this might happen based on the model in the text, and what Kim could do to lose more weight.",
+        "Explain in your own words why this might happen based on the text you read in the first experiment, and what Kim could do to lose more weight.",
       placeholder: "Write here...",
       charCount: (n: number) => `Characters: ${n} / 250`,
       submitBtn: "Finish →",
