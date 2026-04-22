@@ -26,6 +26,10 @@ const TR = {
     secondaryGoals: "Sekundære mål",
     fritekstScores: "Fritekst scorene",
     fritekstFollowup: "Fritekst follow-up scorene",
+    retentionPlotTitle: "Retention: umiddelbar → follow-up (kun parrede deltagere)",
+    retentionImmediate: "Umiddelbar",
+    retentionFollowup: "Follow-up",
+    retentionInteraction: "Interaktionseffekt (gruppe × tid)",
     mcq: "MCQ",
     chatbotExp: "Oplevelse af chatbot",
     behavTime: "Adfærd & Tid",
@@ -72,6 +76,10 @@ const TR = {
     secondaryGoals: "Secondary outcomes",
     fritekstScores: "Free-text scores",
     fritekstFollowup: "Free-text follow-up scores",
+    retentionPlotTitle: "Retention: immediate → follow-up (paired participants only)",
+    retentionImmediate: "Immediate",
+    retentionFollowup: "Follow-up",
+    retentionInteraction: "Interaction effect (group × time)",
     mcq: "MCQ",
     chatbotExp: "Chatbot experience",
     behavTime: "Behaviour & Time",
@@ -390,7 +398,7 @@ export default function Dashboard() {
   if (loading) return <div className="p-10 text-zinc-400">{t.loading}</div>;
   if (!data) return <div className="p-10 text-red-400">{t.error}</div>;
 
-  const { nTotal, nCompleted, nDropouts, nFollowUp, groupStats, comparisons: cmp, demographics, deviceGain, deviceComparison, codingPoints, codingStats, followUpCodingPoints, followUpCodingStats, lastUpdated } = data;
+  const { nTotal, nCompleted, nDropouts, nFollowUp, groupStats, comparisons: cmp, demographics, deviceGain, deviceComparison, codingPoints, codingStats, followUpCodingPoints, followUpCodingStats, retentionStats, lastUpdated } = data;
   const ctrl = groupStats.control;
   const intr = groupStats.intervention;
 
@@ -755,6 +763,96 @@ export default function Dashboard() {
             <span><span className="inline-block w-2 h-2 rounded-sm bg-blue-500 mr-1" />Intervention</span>
           </div>
         </div>
+
+        {/* Retention lineplot */}
+        {retentionStats && retentionStats.nPaired >= 2 && (
+          <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
+            <p className="text-xs text-zinc-400 mb-1">{t.retentionPlotTitle} (N={retentionStats.nPaired})</p>
+            {/* Interaction stat row */}
+            {retentionStats.interactionCmp && (
+              <div className="flex gap-3 text-xs mt-1 mb-3 flex-wrap">
+                <span className="text-zinc-300 font-medium">{t.retentionInteraction}:</span>
+                <span className={retentionStats.interactionCmp.p < 0.05 ? "text-blue-400 font-semibold" : "text-zinc-400"}>
+                  p = {retentionStats.interactionCmp.p < 0.001 ? "< .001" : retentionStats.interactionCmp.p.toFixed(3).replace("0.", ".")}
+                  {retentionStats.interactionCmp.p < 0.05 ? " *" : ""}
+                </span>
+                <span className="text-zinc-500">t = {retentionStats.interactionCmp.t.toFixed(2)}</span>
+                <span className="text-zinc-500">d = {retentionStats.interactionCmp.d.toFixed(2)}</span>
+              </div>
+            )}
+            <ResponsiveContainer width="100%" height={260}>
+              <LineChart margin={{ top: 20, right: 32, bottom: 8, left: 0 }}
+                data={[
+                  {
+                    name: t.retentionImmediate,
+                    Control:      retentionStats.control.immediateMean,
+                    Intervention: retentionStats.intervention.immediateMean,
+                    errCtrl:      retentionStats.control.immediateSem,
+                    errIntr:      retentionStats.intervention.immediateSem,
+                    sigImm:       retentionStats.immediateCmp,
+                  },
+                  {
+                    name: t.retentionFollowup,
+                    Control:      retentionStats.control.followupMean,
+                    Intervention: retentionStats.intervention.followupMean,
+                    errCtrl:      retentionStats.control.followupSem,
+                    errIntr:      retentionStats.intervention.followupSem,
+                    sigFu:        retentionStats.followupCmp,
+                  },
+                ]}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+                <XAxis dataKey="name" tick={{ fill: "#a1a1aa", fontSize: 12 }} />
+                <YAxis domain={[0, 8]} ticks={[0, 2, 4, 6, 8]} tick={{ fill: "#a1a1aa", fontSize: 12 }} />
+                <Tooltip formatter={tooltipFmt} contentStyle={{ background: "#18181b", border: "1px solid #3f3f46" }} />
+                <Line dataKey="Control" stroke={COLORS.control} strokeWidth={2.5}
+                  dot={(props: any) => {
+                    const { cx, cy, payload } = props;
+                    const sig = payload?.sigImm?.p < 0.05 || payload?.sigFu?.p < 0.05;
+                    return <g key={`ctrl-dot-${cx}`}>
+                      <circle cx={cx} cy={cy} r={6} fill={COLORS.control} />
+                      {sig && <text x={cx} y={cy - 12} textAnchor="middle" fill="#facc15" fontSize={14} fontWeight="bold">*</text>}
+                    </g>;
+                  }}
+                  activeDot={{ r: 8 }}
+                />
+                <Line dataKey="Intervention" stroke={COLORS.intervention} strokeWidth={2.5}
+                  dot={(props: any) => {
+                    const { cx, cy, payload } = props;
+                    const sig = payload?.sigImm?.p < 0.05 || payload?.sigFu?.p < 0.05;
+                    return <g key={`intr-dot-${cx}`}>
+                      <circle cx={cx} cy={cy} r={6} fill={COLORS.intervention} />
+                      {sig && <text x={cx} y={cy - 12} textAnchor="middle" fill="#facc15" fontSize={14} fontWeight="bold">*</text>}
+                    </g>;
+                  }}
+                  activeDot={{ r: 8 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+            {/* Legend + group stats */}
+            <div className="flex flex-wrap gap-4 mt-2 text-xs text-zinc-400">
+              {(["control", "intervention"] as const).map(grp => {
+                const s = retentionStats[grp];
+                return (
+                  <span key={grp}>
+                    <span className="inline-block w-2 h-2 rounded-sm mr-1" style={{ background: COLORS[grp] }} />
+                    {grp === "control" ? "Control" : "Intervention"} (n={s.n}):
+                    {" "}{fmt(s.immediateMean)} → {fmt(s.followupMean)}
+                  </span>
+                );
+              })}
+            </div>
+            {/* Per-timepoint significance */}
+            <div className="flex flex-wrap gap-4 mt-1 text-xs text-zinc-500">
+              {retentionStats.immediateCmp && (
+                <span>Umiddelbar: p = {retentionStats.immediateCmp.p < 0.001 ? "< .001" : retentionStats.immediateCmp.p.toFixed(3)}{retentionStats.immediateCmp.p < 0.05 ? " *" : ""}, d = {retentionStats.immediateCmp.d.toFixed(2)}</span>
+              )}
+              {retentionStats.followupCmp && (
+                <span>Follow-up: p = {retentionStats.followupCmp.p < 0.001 ? "< .001" : retentionStats.followupCmp.p.toFixed(3)}{retentionStats.followupCmp.p < 0.05 ? " *" : ""}, d = {retentionStats.followupCmp.d.toFixed(2)}</span>
+              )}
+            </div>
+          </div>
+        )}
       </Section>
 
       {/* MCQ */}

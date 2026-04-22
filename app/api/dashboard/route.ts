@@ -298,6 +298,54 @@ export async function GET() {
       ),
     };
 
+    // ── Retention (paired: har begge immediate + follow-up) ──────────────────────
+    const paired = all.filter(r => r.codeTotal !== null && r.followUpCodeTotal !== null);
+    function pairedMean(grp: string, key: "codeTotal" | "followUpCodeTotal") {
+      const vals = paired.filter(r => r.group === grp).map(r => r[key] as number);
+      return vals.length ? +(vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(3) : null;
+    }
+    function pairedSem(grp: string, key: "codeTotal" | "followUpCodeTotal") {
+      const vals = paired.filter(r => r.group === grp).map(r => r[key] as number);
+      if (vals.length < 2) return null;
+      const m = vals.reduce((a, b) => a + b, 0) / vals.length;
+      const sd = Math.sqrt(vals.reduce((a, b) => a + (b - m) ** 2, 0) / (vals.length - 1));
+      return +(sd / Math.sqrt(vals.length)).toFixed(3);
+    }
+    // Interaction: t-test on change scores (followUp - immediate) between groups
+    const ctrlChanges = paired.filter(r => r.group === "control")
+      .map(r => (r.followUpCodeTotal as number) - (r.codeTotal as number));
+    const intrChanges = paired.filter(r => r.group === "intervention")
+      .map(r => (r.followUpCodeTotal as number) - (r.codeTotal as number));
+    const interactionCmp = welchTest(ctrlChanges, intrChanges);
+
+    const retentionStats = {
+      nPaired: paired.length,
+      control: {
+        immediateMean: pairedMean("control", "codeTotal"),
+        immediateSem:  pairedSem("control", "codeTotal"),
+        followupMean:  pairedMean("control", "followUpCodeTotal"),
+        followupSem:   pairedSem("control", "followUpCodeTotal"),
+        n: paired.filter(r => r.group === "control").length,
+      },
+      intervention: {
+        immediateMean: pairedMean("intervention", "codeTotal"),
+        immediateSem:  pairedSem("intervention", "codeTotal"),
+        followupMean:  pairedMean("intervention", "followUpCodeTotal"),
+        followupSem:   pairedSem("intervention", "followUpCodeTotal"),
+        n: paired.filter(r => r.group === "intervention").length,
+      },
+      // Group diff at each timepoint (only among paired participants)
+      immediateCmp: welchTest(
+        paired.filter(r => r.group === "control").map(r => r.codeTotal as number),
+        paired.filter(r => r.group === "intervention").map(r => r.codeTotal as number),
+      ),
+      followupCmp: welchTest(
+        paired.filter(r => r.group === "control").map(r => r.followUpCodeTotal as number),
+        paired.filter(r => r.group === "intervention").map(r => r.followUpCodeTotal as number),
+      ),
+      interactionCmp,
+    };
+
     return NextResponse.json({
       nTotal: all.length, nCompleted: completed.length, nDropouts: dropouts.length,
       nFollowUp,
@@ -306,6 +354,7 @@ export async function GET() {
       deviceGain, deviceComparison,
       codingPoints, codingStats,
       followUpCodingPoints, followUpCodingStats,
+      retentionStats,
       lastUpdated: new Date().toISOString(),
     });
   } catch (err: any) {
