@@ -318,6 +318,22 @@ export async function GET() {
       .map(r => (r.followUpCodeTotal as number) - (r.codeTotal as number));
     const interactionCmp = welchTest(ctrlChanges, intrChanges);
 
+    // Within-group paired t-tests (immediate → follow-up)
+    function pairedTTest(diffs: number[]) {
+      if (diffs.length < 2) return null;
+      const m = diffs.reduce((a, b) => a + b, 0) / diffs.length;
+      const sd = Math.sqrt(diffs.reduce((a, b) => a + (b - m) ** 2, 0) / (diffs.length - 1));
+      const se = sd / Math.sqrt(diffs.length);
+      if (se === 0) return null;
+      const t = m / se;
+      const df = diffs.length - 1;
+      const p = twoTailP(Math.abs(t), df);
+      const d = m / sd;
+      return { t: +t.toFixed(3), p: +p.toFixed(4), d: +d.toFixed(3) };
+    }
+    const ctrlPairedCmp = pairedTTest(ctrlChanges);
+    const intrPairedCmp = pairedTTest(intrChanges);
+
     const retentionStats = {
       nPaired: paired.length,
       control: {
@@ -344,6 +360,8 @@ export async function GET() {
         paired.filter(r => r.group === "intervention").map(r => r.followUpCodeTotal as number),
       ),
       interactionCmp,
+      ctrlPairedCmp,
+      intrPairedCmp,
     };
 
     return NextResponse.json({

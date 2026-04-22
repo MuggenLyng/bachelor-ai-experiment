@@ -842,14 +842,23 @@ export default function Dashboard() {
                 );
               })}
             </div>
-            {/* Per-timepoint significance */}
-            <div className="flex flex-wrap gap-4 mt-1 text-xs text-zinc-500">
-              {retentionStats.immediateCmp && (
-                <span>Umiddelbar: p = {retentionStats.immediateCmp.p < 0.001 ? "< .001" : retentionStats.immediateCmp.p.toFixed(3)}{retentionStats.immediateCmp.p < 0.05 ? " *" : ""}, d = {retentionStats.immediateCmp.d.toFixed(2)}</span>
-              )}
-              {retentionStats.followupCmp && (
-                <span>Follow-up: p = {retentionStats.followupCmp.p < 0.001 ? "< .001" : retentionStats.followupCmp.p.toFixed(3)}{retentionStats.followupCmp.p < 0.05 ? " *" : ""}, d = {retentionStats.followupCmp.d.toFixed(2)}</span>
-              )}
+            {/* All 5 tests */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 mt-2 text-xs">
+              {[
+                { label: "Between: Ctrl vs Intr (umiddelbar)", cmp: retentionStats.immediateCmp },
+                { label: "Between: Ctrl vs Intr (follow-up)",  cmp: retentionStats.followupCmp },
+                { label: "Paired: Ctrl (imm→fu)",              cmp: retentionStats.ctrlPairedCmp },
+                { label: "Paired: Intr (imm→fu)",              cmp: retentionStats.intrPairedCmp },
+                { label: "Interaktion (gruppe × tid)",         cmp: retentionStats.interactionCmp },
+              ].map(({ label, cmp }) => cmp ? (
+                <div key={label}>
+                  <span className="text-zinc-500">{label}: </span>
+                  <span className={cmp.p < 0.05 ? "text-blue-400 font-medium" : "text-zinc-500"}>
+                    p = {cmp.p < 0.001 ? "< .001" : cmp.p.toFixed(3)}{cmp.p < 0.05 ? " *" : ""}
+                  </span>
+                  <span className="text-zinc-600">, t = {cmp.t.toFixed(2)}, d = {cmp.d.toFixed(2)}</span>
+                </div>
+              ) : null)}
             </div>
           </div>
         )}
