@@ -28,6 +28,8 @@ def run():
 
     # --- Follow-up ---
     df["has_followup"] = df["followUpCompleted"] == True
+    if "followUpCodeTotal" in df.columns and "codeTotal" in df.columns:
+        df["retention_change"] = df["followUpCodeTotal"] - df["codeTotal"]
 
     # --- Køn numerisk (til regression) ---
     df["gender_num"] = df["gender"].map({"Mand": 0, "Kvinde": 1, "Andet": pd.NA})

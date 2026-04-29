@@ -1,0 +1,14 @@
+Metadata-Version: 2.4
+Name: analyse
+Version: 0.1.0
+Requires-Python: >=3.12
+Requires-Dist: matplotlib>=3.10.9
+Requires-Dist: openpyxl>=3.1.5
+Requires-Dist: pandas>=3.0.2
+Requires-Dist: pingouin>=0.6.1
+Requires-Dist: psycopg2-binary>=2.9.12
+Requires-Dist: python-dotenv>=1.2.2
+Requires-Dist: scipy>=1.17.1
+Requires-Dist: seaborn>=0.13.2
+Requires-Dist: sqlalchemy>=2.0.49
+Requires-Dist: statsmodels>=0.14.6

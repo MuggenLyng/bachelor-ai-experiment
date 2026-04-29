@@ -28,3 +28,10 @@ for module_name, description in steps:
     mod.run()
 
 print("\n✓ Pipeline færdig. Se data/ og plots/")
+
+def main():
+    # din eksisterende run_all-kode her
+    pass
+
+if __name__ == "__main__":
+    main()

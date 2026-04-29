@@ -1,0 +1,8 @@
+,codeTotal,followUpCodeTotal,retention_change,mentalEffort,evt_mean,chat_duration_min,freeTextWordCount
+codeTotal,1.0,0.463,-0.404,-0.045,0.036,-0.009,0.399
+followUpCodeTotal,0.463,1.0,0.624,0.04,0.214,0.402,0.358
+retention_change,-0.404,0.624,1.0,0.081,0.189,0.423,0.018
+mentalEffort,-0.045,0.04,0.081,1.0,0.01,0.152,-0.099
+evt_mean,0.036,0.214,0.189,0.01,1.0,0.09,0.344
+chat_duration_min,-0.009,0.402,0.423,0.152,0.09,1.0,0.385
+freeTextWordCount,0.399,0.358,0.018,-0.099,0.344,0.385,1.0

@@ -1,0 +1,4 @@
+[console_scripts]
+analysis = run_all:main
+followup = followup_reminder:main
+run = run_all:main
