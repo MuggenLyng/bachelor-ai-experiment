@@ -23,6 +23,8 @@ type Message = {
   content: string;
 };
 
+const EXPERIMENT_CLOSED = true;
+
 const CHAT_DURATION = 3.5 * 60; // 210 seconds
 const READ_DURATION = 1 * 60; // 60 seconds
 
@@ -145,7 +147,7 @@ export default function Home() {
       return;
     }
 
-    const newGroup: Group = Math.random() < 0.5 ? "control" : "intervention";
+    const newGroup: Group = "control";
     const newId = generateUUID();
 
     localStorage.setItem("group", newGroup);
@@ -307,6 +309,35 @@ export default function Home() {
 
   if (!group || !participantId) {
     return <div className="p-10">{T[lang].loading}</div>;
+  }
+
+  const MID_EXPERIMENT_STEPS: Step[] = [
+    "demographics", "read", "pretest", "zpd", "chat",
+    "freeText", "posttest", "survey",
+  ];
+  if (EXPERIMENT_CLOSED && !MID_EXPERIMENT_STEPS.includes(step)) {
+    return (
+      <div className="min-h-screen bg-zinc-900 flex items-center justify-center px-4">
+        <div className="max-w-md w-full bg-zinc-800 rounded-2xl p-8 text-center space-y-5 shadow-xl">
+          <div className="text-4xl">🔒</div>
+          <h1 className="text-xl font-semibold text-zinc-100">
+            Eksperimentet er lukket
+          </h1>
+          <p className="text-zinc-400 text-sm leading-relaxed">
+            Dataindsamlingen er afsluttet. Tak til alle der deltog!
+          </p>
+          <p className="text-zinc-400 text-sm leading-relaxed">
+            Du kan følge med i dataene og resultaterne på dashboardet:
+          </p>
+          <a
+            href="/dashboard"
+            className="inline-block bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
+          >
+            Gå til dashboard →
+          </a>
+        </div>
+      </div>
+    );
   }
 
   // --- Computed ---
