@@ -1023,6 +1023,50 @@ def run():
         n_i = me_data[me_data["group"] == "intervention"].shape[0]
         print(f"  Gemt → plots/24_cognitive_load.png  (N={len(me_data)}: ctrl={n_c}, intr={n_i})")
 
+    # ── Plot 25: Frafald per trin (bilag) ────────────────────────────────────
+    dropout_path = "data/clean/dropouts.csv"
+    if os.path.exists(dropout_path):
+        drop = pd.read_csv(dropout_path)
+
+        # Rækkefølge følger eksperimentets flow
+        step_order = ["consent", "education", "pretest", "read", "zpd",
+                      "chat", "mentalEffort", "freeText"]
+        step_labels = {
+            "consent":     "Samtykke",
+            "education":   "Demografi",
+            "pretest":     "Pretest",
+            "read":        "Læsning",
+            "zpd":         "Self-efficacy\nog SEVT",
+            "chat":        "Chat",
+            "mentalEffort":"Oplevelse\nspørgeskema",
+            "freeText":    "Fritekst",
+        }
+
+        counts = drop["dropoutStep"].value_counts()
+        steps  = [s for s in step_order if s in counts.index]
+        values = [counts[s] for s in steps]
+        labels = [step_labels[s] for s in steps]
+
+        fig, ax = plt.subplots(figsize=(7, 4.5))
+        bars = ax.bar(labels, values, color="#6B7280", alpha=0.85, width=0.55)
+
+        for bar, val in zip(bars, values):
+            ax.text(bar.get_x() + bar.get_width() / 2,
+                    bar.get_height() + 0.2,
+                    str(val), ha="center", va="bottom",
+                    fontsize=11, fontweight="bold", color="#1a1a1a")
+
+        ax.set_ylabel("Antal frafaldne", fontsize=11)
+        ax.set_xlabel("Eksperimenttrin", fontsize=11)
+        ax.set_title(f"Frafald per trin (N = {len(drop)} i alt)", fontsize=12, pad=10)
+        ax.set_ylim(0, max(values) + 2.5)
+        ax.yaxis.set_major_locator(plt.MaxNLocator(integer=True))
+        sns.despine(ax=ax)
+        plt.tight_layout(pad=1.5)
+        plt.savefig("plots/25_frafald_per_trin.png", dpi=150, bbox_inches="tight")
+        plt.close()
+        print(f"  Gemt → plots/25_frafald_per_trin.png  (N={len(drop)} frafaldne)")
+
     print(f"  Gemt → plots/")
 
 if __name__ == "__main__":

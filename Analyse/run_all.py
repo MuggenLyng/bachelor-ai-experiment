@@ -17,8 +17,9 @@ steps = [
     ("02_clean",    "Renser og filtrerer"),
     ("03_derive",   "Udleder nye variable"),
     ("04_analysis", "Kører statistiske tests"),
-    ("05_plots",    "Genererer plots"),
-    ("06_process",  "Eksplorativ procesanalyse (chat-adfærd)"),
+    ("06_process",        "Eksplorativ procesanalyse (chat-adfærd)"),
+    ("07_chatlog_analysis", "Eksplorativ chatlog-kodningsanalyse"),
+    ("05_plots",          "Genererer plots"),
 ]
 
 for module_name, description in steps:

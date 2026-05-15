@@ -179,6 +179,11 @@ def run():
     r = ttest_report("learning_gain", "learning_gain", df)
     results.append({**r, "test": "H2"})
 
+    # Afled oplevelsesscore her så den er tilgængelig i secondary outcomes og matricer
+    ux_items_early = ["easeOfConversating1", "adaptingToNeeds1", "perceivedLearning1"]
+    if all(c in df.columns for c in ux_items_early):
+        df["oplevelsesscore"] = df[ux_items_early].mean(axis=1)
+
     # =========================================================
     # SECONDARY OUTCOMES
     # =========================================================
@@ -192,6 +197,10 @@ def run():
         if col in df.columns:
             r = ttest_report(label, col, df)
             results.append({**r, "test": "secondary"})
+
+    if "oplevelsesscore" in df.columns:
+        r = ttest_report("Oplevelsesscore (ease + tilpasning + pLearn, eksplorativt)", "oplevelsesscore", df)
+        results.append({**r, "test": "secondary_oplevelse"})
 
     # =========================================================
     # EVT — Cronbach's alpha (intern konsistens)
@@ -209,6 +218,31 @@ def run():
             print(f"  => Acceptabel intern konsistens (α ≥ .70)")
         else:
             print(f"  => Lav intern konsistens (α < .70)")
+
+    # =========================================================
+    # EKSPLORATIV: Cronbach's alpha — ease, tilpasning, pLearn
+    # =========================================================
+    ux_items = ["easeOfConversating1", "adaptingToNeeds1", "perceivedLearning1"]
+    if all(c in df.columns for c in ux_items):
+        ux_data = df[ux_items].dropna()
+        k_ux = len(ux_items)
+        item_vars_ux = ux_data.var(axis=0, ddof=1)
+        total_var_ux = ux_data.sum(axis=1).var(ddof=1)
+        alpha_ux = (k_ux / (k_ux - 1)) * (1 - item_vars_ux.sum() / total_var_ux)
+        print(f"\n--- Eksplorativ: UX-skala reliabilitet (ease + tilpasning + pLearn) ---")
+        print(f"  Items: easeOfConversating1, adaptingToNeeds1, perceivedLearning1")
+        print(f"  Inter-item korrelationer:")
+        for i, c1 in enumerate(ux_items):
+            for c2 in ux_items[i+1:]:
+                r_ux, p_ux = stats.pearsonr(ux_data[c1], ux_data[c2])
+                print(f"    {c1} × {c2}: r = {r_ux:.3f}, p = {p_ux:.3f}")
+        print(f"  Cronbach's α = {alpha_ux:.3f}  (N={len(ux_data)}, k={k_ux} items)")
+        if alpha_ux >= 0.7:
+            print(f"  => Acceptabel intern konsistens (α ≥ .70) — items måler muligvis samme underliggende konstrukt")
+        else:
+            print(f"  => Lav intern konsistens (α < .70)")
+        n_opl = df["oplevelsesscore"].notna().sum()
+        print(f"  Oplevelsesscore (gns. af 3 items): M={df['oplevelsesscore'].mean():.2f}, SD={df['oplevelsesscore'].std():.2f}, N={n_opl}")
 
     # =========================================================
     # H6: EVT → learning_gain + codeTotal
@@ -293,20 +327,37 @@ def run():
     # =========================================================
     # KORRELATIONSMATRIX — sekundære variable + codeTotal + follow-up
     # =========================================================
-    def print_corr(corr_df, short_names):
-        """Print korrelationsmatrix med korte kolonnenavne og 2 decimaler."""
+    def print_corr(corr_df, short_names, raw_df=None):
+        """Print korrelationsmatrix med * p<.05 og ** p<.01."""
+        from scipy.stats import pearsonr
         renamed = corr_df.rename(index=short_names, columns=short_names)
-        col_w = max(max(len(n) for n in renamed.columns), 7) + 1
-        row_w = max(len(n) for n in renamed.index) + 1
+        orig_cols = list(corr_df.columns)
+        col_w = max(max(len(n) for n in renamed.columns), 8) + 1
+        row_w = max(len(n) for n in renamed.index) + 2
         header = f"  {'':>{row_w}}" + "".join(f"{c:>{col_w}}" for c in renamed.columns)
         print(header)
         print(f"  {'-' * len(header)}")
-        for row in renamed.index:
-            vals = "".join(
-                f"{'—':>{col_w}}" if row == col else f"{renamed.loc[row, col]:>{col_w}.2f}"
-                for col in renamed.columns
-            )
+        for ri, row in enumerate(renamed.index):
+            vals = ""
+            for ci, col in enumerate(renamed.columns):
+                if orig_cols[ri] == orig_cols[ci]:
+                    vals += f"{'—':>{col_w}}"
+                else:
+                    r_val = renamed.loc[row, col]
+                    # beregn p-værdi hvis rådata tilgængeligt
+                    stars = ""
+                    if raw_df is not None:
+                        try:
+                            xy = raw_df[[orig_cols[ri], orig_cols[ci]]].dropna()
+                            if len(xy) > 4:
+                                _, p = pearsonr(xy.iloc[:, 0], xy.iloc[:, 1])
+                                stars = "**" if p < 0.01 else ("*" if p < 0.05 else "")
+                        except Exception:
+                            pass
+                    cell = f"{r_val:.2f}{stars}"
+                    vals += f"{cell:>{col_w}}"
             print(f"  {row:>{row_w}}{vals}")
+        print(f"  * p < .05  ** p < .01")
 
     SHORT = {
         "learning_gain": "MCQgain", "codeTotal": "FTtot", "followUpCodeTotal": "FUtot",
@@ -315,33 +366,51 @@ def run():
         "mentalEffort": "MEffort", "evt_mean": "EVT",
         "chat_duration_min": "ChatMin", "chatMessageCount": "ChatN",
         "freeTextWordCount": "FTchars", "confidence": "Conf",
+        "oplevelsesscore": "Oplev",
     }
 
-    print("\n--- KORRELATIONSMATRIX (alle deltagere, N≈70) ---")
+    print(f"\n--- KORRELATIONSMATRIX (alle deltagere, N={len(df)}) ---")
     corr_cols = [
         "learning_gain", "codeTotal",
-        "perceivedLearning1", "easeOfConversating1",
-        "adaptingToNeeds1", "mentalEffort", "evt_mean",
-        "chat_duration_min", "chatMessageCount", "freeTextWordCount", "confidence",
+        "perceivedLearning1", "easeOfConversating1", "adaptingToNeeds1", "oplevelsesscore",
+        "mentalEffort", "evt_mean", "confidence",
+        "chat_duration_min", "chatMessageCount", "freeTextWordCount",
     ]
     corr_cols = [c for c in corr_cols if c in df.columns]
     corr = df[corr_cols].corr().round(3)
-    print_corr(corr, SHORT)
+    print_corr(corr, SHORT, raw_df=df)
     corr.to_csv("data/processed/correlations.csv")
+    # Udvalgte korrelationer
+    from scipy.stats import pearsonr as _pr
+    for c1, c2, lbl in [("confidence", "codeTotal", "Self-efficacy × FTtot")]:
+        _sub = df[[c1, c2]].dropna()
+        if len(_sub) > 4:
+            _r, _p = _pr(_sub[c1], _sub[c2])
+            print(f"  => {lbl}: r={_r:+.3f}, p={_p:.3f}, N={len(_sub)}")
 
     # Separat follow-up korrelationsmatrix (kun paired deltagere)
     if "followUpCodeTotal" in df.columns:
         paired_corr = df[df["followUpCodeTotal"].notna() & df["codeTotal"].notna()].copy()
         fu_corr_cols = [
             "codeTotal", "followUpCodeTotal", "retention_change",
-            "mentalEffort", "evt_mean", "chat_duration_min", "freeTextWordCount",
+            "perceivedLearning1", "easeOfConversating1", "adaptingToNeeds1", "oplevelsesscore",
+            "mentalEffort", "evt_mean", "confidence", "chat_duration_min", "freeTextWordCount",
         ]
         fu_corr_cols = [c for c in fu_corr_cols if c in paired_corr.columns]
         fu_corr = paired_corr[fu_corr_cols].corr().round(3)
         print(f"\n--- KORRELATIONSMATRIX (follow-up paired, N={len(paired_corr)}) ---")
         print(f"  NB: RetΔ = FUtot − FTtot (matematisk forbundet)")
-        print_corr(fu_corr, SHORT)
+        print_corr(fu_corr, SHORT, raw_df=paired_corr)
         fu_corr.to_csv("data/processed/correlations_followup.csv")
+        # Udvalgte korrelationer
+        for c1, c2, lbl in [
+            ("confidence",        "followUpCodeTotal", "Self-efficacy × FUtot"),
+            ("perceivedLearning1", "retention_change",  "Oplevet læring × RetΔ"),
+        ]:
+            _sub = paired_corr[[c1, c2]].dropna()
+            if len(_sub) > 4:
+                _r, _p = _pr(_sub[c1], _sub[c2])
+                print(f"  => {lbl}: r={_r:+.3f}, p={_p:.3f}, N={len(_sub)}")
 
     # =========================================================
     # FRITEKST KODNING — manuel (codeA1/A2/A3/B1/codeTotal)
@@ -590,6 +659,96 @@ def run():
     else:
         print("\n--- FOLLOW-UP RETENTION ---")
         print("  (followUpCodeTotal ikke tilgængeligt — kør pipeline igen efter kodning)")
+
+    # ── ANCOVA: gruppe × self-efficacy interaktion ──────────────────────────
+    import statsmodels.api as _sm_api
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as _plt
+
+    print("\n--- ANCOVA: GRUPPE × SELF-EFFICACY INTERAKTION ---")
+    print("    DV: fritekstscore og FU-fritekstscore")
+    print("    Moderator: baseline self-efficacy (confidence, 1–5)")
+    print("    Kovariater: pretestScore, alder, køn, uddannelse\n")
+
+    _anc_clrs  = {"control": "#999999", "intervention": "#4C72B0"}
+    _anc_lbls  = {"control": "Kontrol", "intervention": "Intervention"}
+    _key_terms = [
+        ("group_d",             "Gruppe (hovedeffekt)"),
+        ("confidence",          "Self-efficacy (hoved)"),
+        ("group_d:confidence",  "Gruppe × Self-efficacy"),
+        ("pretestScore",        "Pretest (kovariat)"),
+        ("age",                 "Alder (kovariat)"),
+    ]
+
+    for outcome, outcome_lbl, fname in [
+        ("codeTotal",         "Fritekstscore (0–8)",    "14_ancova_fritekst"),
+        ("followUpCodeTotal", "FU-Fritekstscore (0–8)", "15_ancova_fu"),
+    ]:
+        if outcome not in df.columns:
+            continue
+        _anc_cols = [outcome, "group", "confidence", "pretestScore",
+                     "age", "gender", "education"]
+        _df_a = df[[c for c in _anc_cols if c in df.columns]].dropna().copy()
+        _df_a["group_d"] = (_df_a["group"] == "intervention").astype(int)
+        _N_a = len(_df_a)
+
+        _formula = (f"{outcome} ~ group_d * confidence + pretestScore"
+                    f" + age + C(gender) + C(education)")
+        _mod = smf.ols(_formula, data=_df_a).fit()
+        _anova3 = _sm_api.stats.anova_lm(_mod, typ=3)
+        _ss_res = _anova3.loc["Residual", "sum_sq"]
+
+        print(f"  Outcome: {outcome_lbl}  (N={_N_a})")
+        print(f"  {'─'*62}")
+        print(f"  {'Term':<28}  {'F':>7}  {'p':>9}  {'partial η²':>11}")
+        print(f"  {'─'*28}  {'─'*7}  {'─'*9}  {'─'*11}")
+        for _term, _lbl in _key_terms:
+            if _term not in _anova3.index:
+                continue
+            _F   = _anova3.loc[_term, "F"]
+            _p   = _anova3.loc[_term, "PR(>F)"]
+            _ss  = _anova3.loc[_term, "sum_sq"]
+            _eta = _ss / (_ss + _ss_res)
+            _p_s = "< .001" if _p < 0.001 else f"{_p:.3f}"
+            _sig = "**" if _p < 0.01 else ("*" if _p < 0.05 else "")
+            print(f"  {_lbl:<28}  {_F:>7.3f}  {_p_s:>9}  {_eta:>10.3f}  {_sig}")
+        print(f"  R² = {_mod.rsquared:.3f}, adj. R² = {_mod.rsquared_adj:.3f}\n")
+
+        # ── Interaktionsplot ─────────────────────────────────────────────────
+        _conf_rng  = np.linspace(_df_a["confidence"].min(), _df_a["confidence"].max(), 100)
+        _m_pretest = _df_a["pretestScore"].mean()
+        _m_age     = _df_a["age"].mean()
+        _mo_gender = _df_a["gender"].mode()[0]
+        _mo_edu    = _df_a["education"].mode()[0]
+
+        _fig, _ax = _plt.subplots(figsize=(6, 4.5))
+        for _gval, _gname in [(0, "control"), (1, "intervention")]:
+            _pred = pd.DataFrame({
+                "group_d":     _gval,
+                "confidence":  _conf_rng,
+                "pretestScore": _m_pretest,
+                "age":          _m_age,
+                "gender":       _mo_gender,
+                "education":    _mo_edu,
+            })
+            _y_pred = _mod.predict(_pred)
+            _ax.plot(_conf_rng, _y_pred,
+                     color=_anc_clrs[_gname], lw=2.2, label=_anc_lbls[_gname])
+            _g = _df_a[_df_a["group"] == _gname]
+            _ax.scatter(_g["confidence"], _g[outcome],
+                        color=_anc_clrs[_gname], alpha=0.3, s=22, zorder=2)
+
+        _ax.set_xlabel("Baseline self-efficacy (1–5)", fontsize=10)
+        _ax.set_ylabel(outcome_lbl, fontsize=10)
+        _ax.set_title(f"Gruppe × Self-efficacy — {outcome_lbl}\n"
+                      f"(ANCOVA, kovariater holdt ved gennemsnit/typisk)", fontsize=9, fontweight="bold")
+        _ax.legend(fontsize=9, frameon=False)
+        _ax.spines[["top", "right"]].set_visible(False)
+        _plt.tight_layout()
+        _fig.savefig(f"plots/{fname}.png", dpi=150, bbox_inches="tight")
+        _plt.close()
+        print(f"  Gemt → plots/{fname}.png\n")
 
     # --- Gem resultater ---
     res_df = pd.DataFrame(results)
