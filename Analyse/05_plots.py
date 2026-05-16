@@ -256,10 +256,10 @@ def run():
             ax.plot([xi - 0.08, xi + 0.08], [m - ci, m - ci], color=color, linewidth=1.5, zorder=4)
             ax.plot([xi - 0.08, xi + 0.08], [m + ci, m + ci], color=color, linewidth=1.5, zorder=4)
 
-        ax.set_title("FritekstScore i kontrol- og interventionsbetingelsen", pad=10)
+        ax.set_title("Fritekstscore i kontrol- og interventionsbetingelsen", pad=10)
         ax.set_xticks([0, 1])
         ax.set_xticklabels(["Kontrol", "Intervention"])
-        ax.set_ylabel("Total score (A1 + A2 + A3 + B1, 0–8)")
+        ax.set_ylabel("Fritekstscore")
         ax.set_ylim(-0.3, 8.5)
         ax.set_yticks(range(9))
         sns.despine(ax=ax)
@@ -515,7 +515,7 @@ def run():
                     alpha=0.07, color=color)
                 for x, m, ci in zip(timepoints, means, cis):
                     ax.errorbar(x, m, yerr=ci, fmt="none", color=color, capsize=5, linewidth=1.5)
-            ax.set_ylabel("Total score (A1 + A2 + A3 + B1, 0–8)", fontsize=12)
+            ax.set_ylabel("Fritekstscore", fontsize=12)
             ax.set_ylim(0, 8)
             ax.set_yticks([0, 2, 4, 6, 8])
             ax.set_title("Fritekstscore ved første måling og follow-up", fontsize=13)

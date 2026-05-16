@@ -709,24 +709,24 @@ def run():
     import pingouin as pg9
 
     _med_models = [
-        ("group_num", "meanUserMsgLen",  "followUpCodeTotal",
-         "Model 1", "Gruppe → MsgLængde → FU-fritekst"),
         ("group_num", "meanUserMsgLen",  "codeTotal",
-         "Model 2", "Gruppe → MsgLængde → Fritekst"),
-        ("group_num", "pers_sum",        "codeTotal",
-         "Model 3", "Gruppe → PERS-SUM → Fritekst"),
-        ("group_num", "pers_sum",        "followUpCodeTotal",
-         "Model 4", "Gruppe → PERS-SUM → FU-fritekst"),
-        ("group_num", "pers_scaf_resp",  "codeTotal",
-         "Model 5", "Gruppe → PERS-SCAF-RESP → Fritekst"),
-        ("group_num", "pers_scaf_resp",  "followUpCodeTotal",
-         "Model 6", "Gruppe → PERS-SCAF-RESP → FU-fritekst"),
+         "Model 1a", "Gruppe → MsgLængde → Fritekst"),
+        ("group_num", "meanUserMsgLen",  "followUpCodeTotal",
+         "Model 1b", "Gruppe → MsgLængde → FU-fritekst"),
         ("group_num", "meanUserMsgLen",  "retention_change",
-         "Model 7", "Gruppe → MsgLængde → fritekst-retention"),
+         "Model 1c", "Gruppe → MsgLængde → Fritekst-retention"),
+        ("group_num", "pers_sum",        "codeTotal",
+         "Model 2a", "Gruppe → PERS-SUM → Fritekst"),
+        ("group_num", "pers_sum",        "followUpCodeTotal",
+         "Model 2b", "Gruppe → PERS-SUM → FU-fritekst"),
         ("group_num", "pers_sum",        "retention_change",
-         "Model 8", "Gruppe → PERS-SUM → fritekst-retention"),
+         "Model 2c", "Gruppe → PERS-SUM → Fritekst-retention"),
+        ("group_num", "pers_scaf_resp",  "codeTotal",
+         "Model 3a", "Gruppe → PERS-SCAF-RESP → Fritekst"),
+        ("group_num", "pers_scaf_resp",  "followUpCodeTotal",
+         "Model 3b", "Gruppe → PERS-SCAF-RESP → FU-fritekst"),
         ("group_num", "pers_scaf_resp",  "retention_change",
-         "Model 9", "Gruppe → PERS-SCAF-RESP → fritekst-retention"),
+         "Model 3c", "Gruppe → PERS-SCAF-RESP → Fritekst-retention"),
     ]
 
     print(f"\n{'─'*60}")
@@ -750,41 +750,51 @@ def run():
             data=_sub, x=_x, m=_m, y=_y,
             n_boot=5000, seed=42, alpha=0.05
         )
-        # pingouin path labels: "{m} ~ X", "Y ~ {m}", "Total", "Direct", "Indirect"
-        # CI cols: "CI2.5", "CI97.5"
+        # pingouin row 1 viser MARGINAL b (Y ~ M uden X) — ikke den der bruges i indirect.
+        # Indirect = c − c' = a × b_betinget (Y ~ X + M).
+        # Vi beregner b_betinget manuelt for transparent rapportering.
         def _g(row_idx, col):
             try: return _res.iloc[row_idx][col]
             except: return np.nan
 
-        _a   = _g(0, "coef"); _a_se = _g(0, "se"); _a_p  = _g(0, "pval")
-        _b   = _g(1, "coef"); _b_se = _g(1, "se"); _b_p  = _g(1, "pval")
-        _c   = _g(2, "coef"); _c_p  = _g(2, "pval")
-        _cp  = _g(3, "coef"); _cp_p = _g(3, "pval")
-        _ind = _g(4, "coef")
-        _lo  = _g(4, "CI2.5")
-        _hi  = _g(4, "CI97.5")
+        _a    = _g(0, "coef"); _a_se = _g(0, "se"); _a_p = _g(0, "pval")
+        _c    = _g(2, "coef"); _c_p  = _g(2, "pval")
+        _cp   = _g(3, "coef"); _cp_p = _g(3, "pval")
+        _ind  = _g(4, "coef")
+        _lo   = _g(4, "CI2.5")
+        _hi   = _g(4, "CI97.5")
+
+        # Betinget b-path: koefficient af M i Y ~ X + M
+        try:
+            import statsmodels.formula.api as _smf_med
+            _mod_b = _smf_med.ols(f"{_y} ~ {_x} + {_m}", data=_sub).fit()
+            _b_cond    = _mod_b.params[_m]
+            _b_cond_se = _mod_b.bse[_m]
+            _b_cond_p  = _mod_b.pvalues[_m]
+            _axb_check = _a * _b_cond          # skal ≈ _ind
+        except Exception:
+            _b_cond = _b_cond_se = _b_cond_p = _axb_check = np.nan
+
         _ci_sig = (not (np.isnan(_lo) or np.isnan(_hi))) and not (_lo < 0 < _hi)
-        _prop = _ind / _c if (not pd.isna(_c) and abs(_c) > 1e-6) else np.nan
-        _b_stable = abs(_b_se) < abs(_b) * 0.5 if (not pd.isna(_b_se) and not pd.isna(_b) and abs(_b) > 1e-6) else None
+        _prop   = _ind / _c if (not pd.isna(_c) and abs(_c) > 1e-6) else np.nan
 
         print(f"\n  {_tag}: {_lbl}  (N={_N})")
-        print(f"  {'─'*55}")
-        print(f"  a-path  (gruppe → mediator):   b = {_a:+.3f}, SE = {_a_se:.3f}, p = {_fp(_a_p)}")
-        print(f"  b-path  (mediator → outcome):  b = {_b:+.3f}, SE = {_b_se:.3f}, p = {_fp(_b_p)}")
-        print(f"  c-path  (total effekt):         b = {_c:+.3f}, p = {_fp(_c_p)}")
-        print(f"  c'-path (direkte effekt):       b = {_cp:+.3f}, p = {_fp(_cp_p)}")
-        _ci_str = f"[{_lo:+.3f}, {_hi:+.3f}]" if not (np.isnan(_lo) or np.isnan(_hi)) else "[—, —]"
+        print(f"  {'─'*60}")
+        print(f"  a-path  (gruppe → mediator):          b = {_a:+.3f}, SE = {_a_se:.3f}, p = {_fp(_a_p)}")
+        print(f"  b-path  (mediator → outcome | gruppe): b = {_b_cond:+.3f}, SE = {_b_cond_se:.3f}, p = {_fp(_b_cond_p)}")
+        print(f"  c-path  (total effekt):                b = {_c:+.3f}, p = {_fp(_c_p)}")
+        print(f"  c'-path (direkte effekt):              b = {_cp:+.3f}, p = {_fp(_cp_p)}")
+        _ci_str  = f"[{_lo:+.3f}, {_hi:+.3f}]" if not (np.isnan(_lo) or np.isnan(_hi)) else "[—, —]"
         _sig_note = "  ← CI ekskluderer nul" if _ci_sig else "  ← CI inkluderer nul"
-        print(f"  Indirekte (a×b):               b = {_ind:+.3f}, 95% CI {_ci_str}{_sig_note}")
+        print(f"  Indirekte (a×b, bootstrap):            b = {_ind:+.3f}, 95% CI {_ci_str}{_sig_note}")
+        print(f"  Tjek a×b_betinget:                     b = {_axb_check:+.3f}  (≈ indirekte ✓)" if abs(_axb_check - _ind) < 0.01 else
+              f"  Tjek a×b_betinget:                     b = {_axb_check:+.3f}  (afviger fra indirekte: {_ind:+.3f})")
         if not pd.isna(_prop):
-            print(f"  Proportion mediated:           {_prop:.3f} ({_prop*100:.1f}%)")
-        if _b_stable is not None:
-            _stab_lbl = "stabil (SE < 50% af koefficient)" if _b_stable else "ustabil (SE ≥ 50% af koefficient)"
-            print(f"  b-path stabilitet:             {_stab_lbl}")
+            print(f"  Proportion mediated:                   {_prop:.3f} ({_prop*100:.1f}%)")
 
         _med_results.append({
             "model": _tag, "label": _lbl, "N": _N,
-            "a": _a, "b": _b, "c": _c, "c_prime": _cp, "indirect": _ind,
+            "a": _a, "b": _b_cond, "c": _c, "c_prime": _cp, "indirect": _ind,
             "ci_lo": _lo, "ci_hi": _hi, "ci_sig": _ci_sig,
         })
 

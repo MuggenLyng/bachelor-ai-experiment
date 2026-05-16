@@ -616,21 +616,21 @@ def run():
         # =========================================================
         # FOLLOW-UP COMPLETION BIAS
         # =========================================================
-        print("\n--- FOLLOW-UP COMPLETION BIAS ---")
+        print("\n--- FOLLOW-UP COMPLETION BIAS (attrition-analyse) ---")
         df["fu_done"] = df["followUpCompleted"] == True
-        bias_cols = [
-            ("pretestScore", "Pretest"),
-            ("codeTotal",    "Fritekst total"),
-            ("mentalEffort", "Mental indsats"),
-            ("chat_duration_min", "Chat varighed"),
-            ("age",          "Alder"),
-        ]
-        done    = df[df["fu_done"] == True]
+        done     = df[df["fu_done"] == True]
         not_done = df[df["fu_done"] == False]
         print(f"\n  Fuldførte follow-up: N={len(done)}  |  Ikke fuldførte: N={len(not_done)}")
-        print(f"\n  {'Variabel':<22} {'FU done (M±SD)':<22} {'FU not done (M±SD)':<22} {'p'}")
-        print(f"  {'-'*80}")
-        for col, label in bias_cols:
+
+        # ── Kontinuerlige variable: Welch t-test ────────────────────────────
+        cont_bias = [
+            ("age",          "Alder"),
+            ("pretestScore", "MCQ-prescore"),
+            ("codeTotal",    "Fritekstscore (første måling)"),
+        ]
+        print(f"\n  {'Variabel':<30} {'FU done (M±SD)':<22} {'FU ikke done (M±SD)':<22} {'p'}")
+        print(f"  {'-'*85}")
+        for col, label in cont_bias:
             if col not in df.columns:
                 continue
             a = done[col].dropna()
@@ -639,22 +639,25 @@ def run():
                 continue
             _, p_b = stats.ttest_ind(a, b, equal_var=False)
             p_str = f"{p_b:.3f}" + (" *" if p_b < 0.05 else "")
-            print(f"  {label:<22} {a.mean():.2f} ± {a.std():.2f}          {b.mean():.2f} ± {b.std():.2f}          {p_str}")
+            print(f"  {label:<30} {a.mean():.2f} ± {a.std():.2f}          {b.mean():.2f} ± {b.std():.2f}          {p_str}")
 
-        # Gruppe-fordeling
-        print(f"\n  Gruppe-fordeling:")
-        print(pd.crosstab(df["group"], df["fu_done"], margins=True).to_string())
-        chi2_fu, p_fu_chi, _, _ = stats.chi2_contingency(
-            pd.crosstab(df["group"], df["fu_done"]), correction=False)
-        print(f"  Chi²={chi2_fu:.3f}, p={p_fu_chi:.3f}")
-
-        # Køn + uddannelse
-        for cat_col, label in [("gender", "Køn"), ("edu_group", "Uddannelse")]:
-            if cat_col in df.columns:
-                ct = pd.crosstab(df[cat_col], df["fu_done"])
-                if ct.shape[1] == 2 and ct.min().min() > 0:
-                    chi2_c, p_c, _, _ = stats.chi2_contingency(ct, correction=False)
-                    print(f"  {label}: chi²={chi2_c:.3f}, p={p_c:.3f}")
+        # ── Kategoriske variable: Chi²-test ─────────────────────────────────
+        print(f"\n  Kategoriske variable (Chi²):")
+        cat_bias = [
+            ("group",     "Gruppe"),
+            ("gender",    "Køn"),
+            ("edu_group", "Uddannelse"),
+        ]
+        for cat_col, label in cat_bias:
+            if cat_col not in df.columns:
+                continue
+            ct = pd.crosstab(df[cat_col], df["fu_done"])
+            print(f"\n  {label}:")
+            print(ct.to_string())
+            if ct.shape[1] == 2:
+                chi2_c, p_c, dof_c, _ = stats.chi2_contingency(ct, correction=False)
+                p_str = f"{p_c:.3f}" + (" *" if p_c < 0.05 else "")
+                print(f"  Chi²({dof_c}) = {chi2_c:.3f}, p = {p_str}")
 
     else:
         print("\n--- FOLLOW-UP RETENTION ---")
